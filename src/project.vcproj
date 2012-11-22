@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="9,00"
+	Name="BrooderAVR"
+	ProjectGUID="{B64D38B4-CF9C-47BE-B323-2E21398EB143}"
+	RootNamespace="BrooderAVR"
+	Keyword="MakeFileProj"
+	TargetFrameworkVersion="131072"
+	>
+	<Platforms>
+		<Platform
+			Name="Win32"
+		/>
+	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
+	<Configurations>
+		<Configuration
+			Name="Compile|Win32"
+			OutputDirectory="$(ProjectDir)"
+			IntermediateDirectory="$(ProjectDir)"
+			ConfigurationType="0"
+			BuildLogFile="BuildLogCompile.htm"
+			>
+			<Tool
+				Name="VCNMakeTool"
+				BuildCommandLine="make all"
+				ReBuildCommandLine="make program"
+				CleanCommandLine="make clean"
+				Output="main.hex"
+				PreprocessorDefinitions=""
+				IncludeSearchPath="C:\WinAVR\avr\include"
+				ForcedIncludes=""
+				AssemblySearchPath=""
+				ForcedUsingAssemblies=""
+				CompileAsManaged=""
+			/>
+		</Configuration>
+		<Configuration
+			Name="Program|Win32"
+			OutputDirectory="$(ProjectDir)"
+			IntermediateDirectory="$(ProjectDir)"
+			ConfigurationType="0"
+			BuildLogFile="BuildLogProgram.htm"
+			>
+			<Tool
+				Name="VCNMakeTool"
+				BuildCommandLine="make program"
+				ReBuildCommandLine="make program"
+				CleanCommandLine=""
+				Output="main.hex"
+				PreprocessorDefinitions=""
+				IncludeSearchPath="C:\WinAVR\avr\include"
+				ForcedIncludes=""
+				AssemblySearchPath=""
+				ForcedUsingAssemblies=""
+				CompileAsManaged=""
+			/>
+		</Configuration>
+	</Configurations>
+	<References>
+	</References>
+	<Files>
+		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+			>
+			<File
+				RelativePath=".\main.c"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Header Files"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			>
+			<File
+				RelativePath=".\stdafx.h"
+				>
+			</File>
+		</Filter>
+		<File
+			RelativePath=".\Makefile"
+			>
+		</File>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>

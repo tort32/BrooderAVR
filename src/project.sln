@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BrooderAVR", "project.vcproj", "{B64D38B4-CF9C-47BE-B323-2E21398EB143}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Compile|Win32 = Compile|Win32
+		Program|Win32 = Program|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B64D38B4-CF9C-47BE-B323-2E21398EB143}.Compile|Win32.ActiveCfg = Compile|Win32
+		{B64D38B4-CF9C-47BE-B323-2E21398EB143}.Compile|Win32.Build.0 = Compile|Win32
+		{B64D38B4-CF9C-47BE-B323-2E21398EB143}.Program|Win32.ActiveCfg = Program|Win32
+		{B64D38B4-CF9C-47BE-B323-2E21398EB143}.Program|Win32.Build.0 = Program|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
