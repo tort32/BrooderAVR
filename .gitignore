@@ -51,6 +51,10 @@ ipch/
 *.sln.docstates
 _ReSharper*
 
+# Proteus ISIS Backup #
+#######################
+[Ll]ast [Ll]oaded*.dbk
+
 # OS generated files #
 ######################
 .DS_Store
