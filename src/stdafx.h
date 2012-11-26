@@ -17,3 +17,14 @@
 #define LO(wd) ((BYTE)(0x00ff&wd))
 
 #define CHK_BUT(pin,mask) ((~(pin))&(mask))
+
+/* ARDUINO ENVIRONMENT */
+#define __AVR__
+#define ARDUINO 100
+#include "Arduino.h"
+/*
+#include "Wire.h"
+#include "OneWire.h"
+#include "LCD4Bit_mod.h"
+#include "DS1307.h"
+*/

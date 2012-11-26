@@ -29,7 +29,7 @@
 				ReBuildCommandLine="make program"
 				CleanCommandLine="make clean"
 				Output="main.hex"
-				PreprocessorDefinitions=""
+				PreprocessorDefinitions="ARDUINO=100"
 				IncludeSearchPath="C:\WinAVR\avr\include"
 				ForcedIncludes=""
 				AssemblySearchPath=""
@@ -68,9 +68,37 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\main.c"
+				RelativePath=".\brooderAVR.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\main.cpp"
+				>
+			</File>
+			<Filter
+				Name="lib"
+				>
+				<File
+					RelativePath=".\lib\DS1307.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\LCD4Bit_mod.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\OneWire.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\twi.c"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\Wire.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -81,6 +109,30 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
+			<Filter
+				Name="lib"
+				>
+				<File
+					RelativePath=".\lib\DS1307.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\LCD4Bit_mod.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\OneWire.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\twi.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\Wire.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\Makefile"

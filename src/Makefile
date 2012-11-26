@@ -1,9 +1,10 @@
 # Тип используемого микроконтроллера
-MCU = atmega8
+MCU = atmega328
 # Частота кварцевого резонатора (Hz)
-F_CPU = 12000000
+F_CPU = 1000000
 # Название файла проекта (без расширения)
-TARGET = main
+TARGET = brooderAVR
+SOURCE = $(TARGET) wiring LCD4Bit_mod wiring_digital
 # Используемый программатор (для AVRDUDE)
 #AVRDUDE_PROGRAMMER = stk200
 AVRDUDE_PROGRAMMER = usbtiny
@@ -16,9 +17,9 @@ FORMAT = ihex
 # Object files directory
 OBJDIR = obj
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c
+SRC = $(SOURCE:%=%.c)
 # List C++ source files here. (C dependencies are automatically generated.)
-CPPSRC = 
+CPPSRC = $(SOURCE:%=%.cpp)
 # List Assembler source files here.
 ASRC =
 # Optimization level, can be [0, 1, 2, 3, s]. 
@@ -35,7 +36,7 @@ DEBUG =
 #     Each directory must be seperated by a space.
 #     Use forward slashes for directory separators.
 #     For a directory that has spaces, enclose it in quotes.
-EXTRAINCDIRS = 
+EXTRAINCDIRS = .\lib
 # Compiler flag to set the C Standard level.
 #     c89   = "ANSI" C
 #     gnu89 = c89 plus GCC extensions
@@ -206,6 +207,7 @@ DEBUG_HOST = localhost
 # Define programs and commands.
 SHELL = sh
 CC = avr-gcc
+CCPP = avr-g++
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size
@@ -368,33 +370,40 @@ extcoff: $(TARGET).elf
 %.elf: $(OBJ)
 	@echo
 	@echo $(MSG_LINKING) $@
-#	$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
-	@echo '@$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS) 2> errors.err' > tmp.bat
-	@echo '@SET ERR=%ERRORLEVEL%' >> tmp.bat
-	@echo '@sed -e "s/c:(.text+0x[0-9a-fA-F]\{1,\}):/c: error LNK:/" errors.err' >> tmp.bat
-	@echo '@rm errors.err' >> tmp.bat
-	@echo '@IF NOT %ERR% == 0 EXIT %ERR%' >> tmp.bat
-	@tmp.bat
-	@rm tmp.bat
+#	$(CCPP) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
+	@$(REMOVE) link.err
+	@$(REMOVE) link.bat
+	@echo '@$(CCPP) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS) 2> link.err' > link.bat
+	@echo '@SET ERR=%ERRORLEVEL%' >> link.bat
+	@echo '@sed -e "s/c:[(].\{1,\}[)]:/c: error LNK:/" -e "s/cpp:[(].\{1,\}[)]:/cpp: error LNK:/" -e "s/o:[(].\{1,\}[)]:/o: error LNK:/" link.err' >> link.bat
+	@echo '@IF NOT %ERR% == 0 EXIT %ERR%' >> link.bat
+	@link.bat
 
 # Compile: create object files from C source files.
 $(OBJDIR)/%.o : %.c
 	@echo
 	@echo $(MSG_COMPILING) $<
 #	$(CC) -c $(ALL_CFLAGS) $< -o $@
-	@echo '@$(CC) -c $(ALL_CFLAGS) $< -o $@ 2> errors.err' > tmp.bat
-	@echo '@SET ERR=%ERRORLEVEL%' >> tmp.bat
-	@echo '@sed -e "s/c:\([0-9]\{1,\}\)/c(\1)/" -e "s/h:\([0-9]\{1,\}\)/h(\1)/" errors.err' >> tmp.bat
-	@echo '@rm errors.err' >> tmp.bat
-	@echo '@IF NOT %ERR% == 0 EXIT %ERR%' >> tmp.bat
-	@tmp.bat
-	@rm tmp.bat
+	@$(REMOVE) $<.err
+	@$(REMOVE) $<.bat
+	@echo '@$(CC) -c $(ALL_CFLAGS) $< -o $@ 2> $<.err' > $<.bat
+	@echo '@SET ERR=%ERRORLEVEL%' >> $<.bat
+	@echo '@sed -e "s/c:\([0-9]\{1,\}\)/c(\1)/" -e "s/h:\([0-9]\{1,\}\)/h(\1)/" $<.err' >> $<.bat
+	@echo '@IF NOT %ERR% == 0 EXIT %ERR%' >> $<.bat
+	@$<.bat
 
 # Compile: create object files from C++ source files.
 $(OBJDIR)/%.o : %.cpp
 	@echo
 	@echo $(MSG_COMPILING_CPP) $<
-	$(CC) -c $(ALL_CPPFLAGS) $< -o $@ 
+#	$(CCPP) -c $(ALL_CPPFLAGS) $< -o $@
+#	@$(REMOVE) $<.err
+#	@$(REMOVE) $<.bat
+	@echo '@$(CCPP) -c $(ALL_CPPFLAGS) $< -o $@ 2> $<.err' > $<.bat
+	@echo '@SET ERR=%ERRORLEVEL%' >> $<.bat
+	@echo '@sed -e "s/cpp:\([0-9]\{1,\}\)/cpp(\1)/" -e "s/h:\([0-9]\{1,\}\)/h(\1)/" $<.err' >> $<.bat
+	@echo '@IF NOT %ERR% == 0 EXIT %ERR%' >> $<.bat
+	@$<.bat
 
 # Compile: create assembler files from C source files.
 %.s : %.c
@@ -402,7 +411,7 @@ $(OBJDIR)/%.o : %.cpp
 
 # Compile: create assembler files from C++ source files.
 %.s : %.cpp
-	$(CC) -S $(ALL_CPPFLAGS) $< -o $@
+	$(CCPP) -S $(ALL_CPPFLAGS) $< -o $@
 
 # Assemble: create object files from assembler source files.
 $(OBJDIR)/%.o : %.S
@@ -430,6 +439,12 @@ clean_list :
 	$(REMOVEDIR) $(OBJDIR)
 	$(REMOVE) $(SRC:.c=.s)
 	$(REMOVE) $(SRC:.c=.d)
+	$(REMOVE) $(SRC:.c=.c.err)
+	$(REMOVE) $(SRC:.c=.c.bat)
+	$(REMOVE) $(CPPSRC:.cpp=.cpp.err)
+	$(REMOVE) $(CPPSRC:.cpp=.cpp.bat)
+	$(REMOVE) link.err
+	$(REMOVE) link.bat
 	$(REMOVEDIR) .dep
 
 # Create object files directory

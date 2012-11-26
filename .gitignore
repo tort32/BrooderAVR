@@ -50,10 +50,15 @@ ipch/
 *.user
 *.sln.docstates
 _ReSharper*
+[Bb]uild[Ll]og[Cc]ompile.htm
 
 # Proteus ISIS Backup #
 #######################
 [Ll]ast [Ll]oaded*.dbk
+
+# Project source backup #
+#########################
+*.bak
 
 # OS generated files #
 ######################
