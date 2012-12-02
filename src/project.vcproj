@@ -72,33 +72,45 @@
 				>
 			</File>
 			<File
-				RelativePath=".\main.cpp"
+				RelativePath=".\DS1307.cpp"
 				>
 			</File>
-			<Filter
-				Name="lib"
+			<File
+				RelativePath=".\LCD4Bit_mod.cpp"
 				>
-				<File
-					RelativePath=".\lib\DS1307.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\LCD4Bit_mod.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\OneWire.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\twi.c"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\Wire.cpp"
-					>
-				</File>
-			</Filter>
+			</File>
+			<File
+				RelativePath=".\new.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OneWire.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Print.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\twi.c"
+				>
+			</File>
+			<File
+				RelativePath=".\Wire.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\wiring.c"
+				>
+			</File>
+			<File
+				RelativePath=".\wiring_digital.c"
+				>
+			</File>
+			<File
+				RelativePath=".\WString.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -106,33 +118,45 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Arduino.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DS1307.h"
+				>
+			</File>
+			<File
+				RelativePath=".\LCD4Bit_mod.h"
+				>
+			</File>
+			<File
+				RelativePath=".\new.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OneWire.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Print.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.h"
 				>
 			</File>
-			<Filter
-				Name="lib"
+			<File
+				RelativePath=".\twi.h"
 				>
-				<File
-					RelativePath=".\lib\DS1307.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\LCD4Bit_mod.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\OneWire.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\twi.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\Wire.h"
-					>
-				</File>
-			</Filter>
+			</File>
+			<File
+				RelativePath=".\Wire.h"
+				>
+			</File>
+			<File
+				RelativePath=".\WString.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\Makefile"

@@ -9,7 +9,7 @@ public:
   void commandWrite(int value);
   void init();
   void print(int value);
-  void printIn(char value[]);
+  void printIn(const char* msg);
   void clear();
   //non-core---------------
   void cursorTo(int line_num, int x);

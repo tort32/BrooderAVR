@@ -1,4 +1,5 @@
 #define __AVR_ATmega328P__
+#define F_CPU 1000000UL
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -19,8 +20,6 @@
 #define CHK_BUT(pin,mask) ((~(pin))&(mask))
 
 /* ARDUINO ENVIRONMENT */
-#define __AVR__
-#define ARDUINO 100
 #include "Arduino.h"
 /*
 #include "Wire.h"

@@ -28,6 +28,22 @@
 #include "DS1307.h"
 #include "Wire.h"
 
+#define CTRL_ID B1101000  //DS1307
+
+// Define register bit masks
+#define CLOCKHALT B10000000
+
+#define LO_BCD  B00001111
+#define HI_BCD  B11110000
+
+#define HI_SEC  B01110000
+#define HI_MIN  B01110000
+#define HI_HR   B00110000
+#define LO_DOW  B00000111
+#define HI_DATE B00110000
+#define HI_MTH  B00110000
+#define HI_YR   B11110000
+
 DS1307::DS1307()
 {
   Wire.begin();
@@ -43,7 +59,7 @@ void DS1307::read(void)
 {
   // use the Wire lib to connect to the rtc
   // reset the register pointer to zero
-  Wire.beginTransmission(DS1307_CTRL_ID);
+  Wire.beginTransmission(CTRL_ID);
 
   #if defined(ARDUINO) && ARDUINO >= 100
   Wire.write((byte)0x00);//workaround for issue #527
@@ -54,8 +70,8 @@ void DS1307::read(void)
   Wire.endTransmission();
 
   // request the 7 bytes of data    (secs, min, hr, dow, date. mth, yr)
-  Wire.requestFrom(DS1307_CTRL_ID, 7);
-  for(int i=0; i<7; i++)
+  Wire.requestFrom(CTRL_ID, BYTE_MAX);
+  for(int i=0; i<BYTE_MAX; i++)
   {
     // store data in raw bcd format
     #if defined(ARDUINO) && ARDUINO >= 100
@@ -69,7 +85,7 @@ void DS1307::read(void)
 // update the data on the IC from the bcd formatted data in the buffer
 void DS1307::save(void)
 {
-  Wire.beginTransmission(DS1307_CTRL_ID);
+  Wire.beginTransmission(CTRL_ID);
 
   #if defined(ARDUINO) && ARDUINO >= 100
   Wire.write((byte)0x00);// reset register pointer
@@ -77,7 +93,7 @@ void DS1307::save(void)
   Wire.send(0x00);
   #endif
 
-  for(int i=0; i<7; i++)
+  for(int i=0; i<BYTE_MAX; i++)
   {
     #if defined(ARDUINO) && ARDUINO >= 100
     Wire.write(rtc_bcd[i]);
@@ -88,97 +104,99 @@ void DS1307::save(void)
   Wire.endTransmission();
 }
 
-
 // PUBLIC FUNCTIONS
-void DS1307::get(int *rtc, boolean refresh)   // Aquire data from buffer and convert to int, refresh buffer if required
+void DS1307::getBuffer(byte *rtc)   // Aquire data from buffer and convert to int
 {
-  if(refresh) read();
-  for(int i=0;i<7;i++)  // cycle through each component, create array of data
+  for(byte i=0;i<BYTE_MAX;i++)  // cycle through each component, create array of data
   {
-    rtc[i]=get(i, 0);
+    rtc[i] = get(i);
   }
 }
 
-int DS1307::get(int c, boolean refresh)  // aquire individual RTC item from buffer, return as int, refresh buffer if required
+byte DS1307::get(byte c)  // aquire individual RTC item from buffer, return as byte
 {
-  if(refresh) read();
-  int v=-1;
   switch(c)
   {
-  case DS1307_SEC:
-    v=(10*((rtc_bcd[DS1307_SEC] & DS1307_HI_SEC)>>4))+(rtc_bcd[DS1307_SEC] & DS1307_LO_BCD);
-    break;
-  case DS1307_MIN:
-    v=(10*((rtc_bcd[DS1307_MIN] & DS1307_HI_MIN)>>4))+(rtc_bcd[DS1307_MIN] & DS1307_LO_BCD);
-    break;
-  case DS1307_HR:
-    v=(10*((rtc_bcd[DS1307_HR] & DS1307_HI_HR)>>4))+(rtc_bcd[DS1307_HR] & DS1307_LO_BCD);
-    break;
-  case DS1307_DOW:
-    v=rtc_bcd[DS1307_DOW] & DS1307_LO_DOW;
-    break;
-  case DS1307_DATE:
-    v=rtc_bcd[DS1307_DATE]/16 * 10 +  rtc_bcd[DS1307_DATE] % 16;
-    break;
-  case DS1307_MTH:
-    v=(10*((rtc_bcd[DS1307_MTH] & DS1307_HI_MTH)>>4))+(rtc_bcd[DS1307_MTH] & DS1307_LO_BCD);
-    break;
-  case DS1307_YR:
-    v=2000 + rtc_bcd[DS1307_YR]/16 * 10 + rtc_bcd[DS1307_YR] % 16;
-    break;
+  case SEC:
+    return get(SEC_HI) * 10 + get(SEC_LO);
+  case MIN:
+    return get(MIN_HI) * 10 + get(MIN_LO);
+  case HOUR:
+    return get(HOUR_HI) * 10 + get(HOUR_LO);
+  case DOW:
+    return rtc_bcd[DOW] & LO_DOW;
+  case DATE:
+    return get(DATE_HI) * 10 + get(DATE_LO);
+  case MONTH:
+    return get(MONTH_HI) * 10 + get(MONTH_LO);
+  case YEAR:
+    return get(YEAR_LO) * 10 + get(YEAR_HI);
+
+  case SEC_LO:
+    return rtc_bcd[SEC] & LO_BCD;
+  case SEC_HI:
+    return (rtc_bcd[SEC] & HI_SEC) >> 4;
+  case MIN_LO:
+    return rtc_bcd[MIN] & LO_BCD;
+  case MIN_HI:
+    return (rtc_bcd[MIN] & HI_MIN) >> 4;
+  case HOUR_LO:
+    return rtc_bcd[HOUR] & LO_BCD;
+  case HOUR_HI:
+    return (rtc_bcd[HOUR] & HI_HR) >> 4;
+  case DATE_LO:
+    return rtc_bcd[DATE] % 16;
+  case DATE_HI:
+    return rtc_bcd[DATE] / 16;
+  case MONTH_LO:
+    return rtc_bcd[MONTH] & LO_BCD;
+  case MONTH_HI:
+    return (rtc_bcd[MONTH] & HI_MTH) >> 4;
+  case YEAR_LO:
+    return rtc_bcd[YEAR] % 16;
+  case YEAR_HI:
+    return rtc_bcd[YEAR] / 16;
   } // end switch
-  return v;
+  return 0;
 }
 
-void DS1307::set(int c, int v)  // Update buffer, then update the chip
+void DS1307::set(byte c, byte v)  // Update buffer, then update the chip
 {
   read(); //first read the buffer to preserve current time when writing modified values, as the function writes all values at the same time
   switch(c)
   {
-  case DS1307_SEC:
+  case SEC:
     if(v<60 && v>-1)
     {
       //preserve existing clock state (running/stopped)
-      int state=rtc_bcd[DS1307_SEC] & DS1307_CLOCKHALT;
-      rtc_bcd[DS1307_SEC]=state | ((v / 10)<<4) + (v % 10);
+      int state = rtc_bcd[SEC] & CLOCKHALT;
+      rtc_bcd[SEC] = state | ((v / 10)<<4) + (v % 10);
     }
     break;
-  case DS1307_MIN:
+  case MIN:
     if(v<60 && v>-1)
-    {
-      rtc_bcd[DS1307_MIN]=((v / 10)<<4) + (v % 10);
-    }
+      rtc_bcd[MIN] = ((v / 10)<<4) + (v % 10);
     break;
-  case DS1307_HR:
+  case HOUR:
     // TODO : AM/PM  12HR/24HR
     if(v<24 && v>-1)
-    {
-      rtc_bcd[DS1307_HR]=((v / 10)<<4) + (v % 10);
-    }
+      rtc_bcd[HOUR] = ((v / 10)<<4) + (v % 10);
     break;
-  case DS1307_DOW:
+  case DOW:
     if(v<8 && v>-1)
-    {
-      rtc_bcd[DS1307_DOW]=v;
-    }
+      rtc_bcd[DOW] = v;
     break;
-  case DS1307_DATE:
+  case DATE:
     if(v<32 && v>-1)
-    {
-      rtc_bcd[DS1307_DATE]=((v / 10)<<4) + (v % 10);
-    }
+      rtc_bcd[DATE] = ((v / 10)<<4) + (v % 10);
     break;
-  case DS1307_MTH:
+  case MONTH:
     if(v<13 && v>-1)
-    {
-      rtc_bcd[DS1307_MTH]=((v / 10)<<4) + (v % 10);
-    }
+      rtc_bcd[MONTH] = ((v / 10)<<4) + (v % 10);
     break;
-  case DS1307_YR:
+  case YEAR:
     if(v<50 && v>-1)
-    {
-      rtc_bcd[DS1307_YR]=((v / 10)<<4) + (v % 10);
-    }
+      rtc_bcd[YEAR] = ((v / 10)<<4) + (v % 10);
     break;
   } // end switch
   save();
@@ -189,7 +207,7 @@ void DS1307::stop(void)
   // set the ClockHalt bit high to stop the rtc
   // this bit is part of the seconds byte
   read(); 	//refresh buffer first to preserve existing time
-  rtc_bcd[DS1307_SEC]=rtc_bcd[DS1307_SEC] | DS1307_CLOCKHALT; //set the halt bit in the seconds value
+  rtc_bcd[SEC] = rtc_bcd[SEC] | CLOCKHALT; //set the halt bit in the seconds value
   save(); //write register to the chip
 }
 
@@ -197,7 +215,7 @@ void DS1307::start(void)
 {
   // unset the ClockHalt bit to start the rtc
   read();				 //refresh buffer to get existing time
-  rtc_bcd[DS1307_SEC]-=DS1307_CLOCKHALT; //unset the halt bit in the seconds value
+  rtc_bcd[SEC] -= CLOCKHALT; //unset the halt bit in the seconds value
   save(); //write register to the chip
 }
 

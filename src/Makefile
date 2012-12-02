@@ -4,7 +4,7 @@ MCU = atmega328
 F_CPU = 1000000
 # Название файла проекта (без расширения)
 TARGET = brooderAVR
-SOURCE = $(TARGET) wiring LCD4Bit_mod wiring_digital
+SOURCE = $(TARGET) wiring LCD4Bit_mod wiring_digital DS1307 Wire twi new Print WString OneWire HardwareSerial
 # Используемый программатор (для AVRDUDE)
 #AVRDUDE_PROGRAMMER = stk200
 AVRDUDE_PROGRAMMER = usbtiny
@@ -44,9 +44,9 @@ EXTRAINCDIRS = .\lib
 #     gnu99 = c99 plus GCC extensions
 CSTANDARD = -std=gnu99
 # Place -D or -U options here for C sources
-CDEFS = -DF_CPU=$(F_CPU)UL
+CDEFS = -DF_CPU=$(F_CPU)UL -DARDUINO=100 -D__AVR__=1
 # Place -D or -U options here for C++ sources
-CPPDEFS = -DF_CPU=$(F_CPU)UL
+CPPDEFS = -DF_CPU=$(F_CPU)UL -DARDUINO=100 -D__AVR__=1
 #CPPDEFS += -D__STDC_LIMIT_MACROS
 #CPPDEFS += -D__STDC_CONSTANT_MACROS
 
@@ -75,6 +75,7 @@ CFLAGS += -Wundef
 CFLAGS += -Wa,-adhlns=$(<:%.c=$(OBJDIR)/%.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
+CFLAGS += -fdata-sections -ffunction-sections
 
 #---------------- Compiler Options C++ ----------------
 #  -g*:          generate debugging information
@@ -102,6 +103,7 @@ CFLAGS += -Wundef
 CPPFLAGS += -Wa,-adhlns=$(<:%.cpp=$(OBJDIR)/%.lst)
 CPPFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 #CPPFLAGS += $(CSTANDARD)
+CPPFLAGS += -fdata-sections -ffunction-sections
 
 #---------------- Assembler Options ----------------
 #  -Wa,...:   tell GCC to pass this to the assembler.
@@ -150,6 +152,7 @@ LDFLAGS = -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
 #LDFLAGS += -T linker_script.x
+LDFLAGS += -Wl,--gc-sections
 
 #---------------- Programming Options (avrdude) ----------------
 
@@ -208,6 +211,7 @@ DEBUG_HOST = localhost
 SHELL = sh
 CC = avr-gcc
 CCPP = avr-g++
+LD = acr-g++
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size

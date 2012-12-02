@@ -126,7 +126,7 @@ void LCD4Bit_mod::print(int value) {
 
 //print the given string to the LCD at the current cursor position.  overwrites, doesn't insert.
 //While I don't understand why this was named printIn (PRINT IN?) in the original LiquidCrystal library, I've preserved it here to maintain the interchangeability of the two libraries.
-void LCD4Bit_mod::printIn(char msg[]) {
+void LCD4Bit_mod::printIn(const char* msg) {
   uint8_t i;  //fancy int.  avoids compiler warning when comparing i with strlen()'s uint8_t
   for (i=0;i < strlen(msg);i++){
     print(msg[i]);
@@ -211,7 +211,7 @@ void LCD4Bit_mod::cursorTo(int line_num, int x){
   }
   //offset 40 chars in if second line requested
   if (line_num == 2){
-    x += 40;
+    x += 0x40;
   }
   //advance the cursor to the right according to position. (second line starts at position 40).
   for (int i=0; i<x; i++) {

@@ -98,6 +98,8 @@ sample code bearing this copyright.
 
 #include "OneWire.h"
 
+#include <util/delay.h>
+#define delayMicroseconds(x) _delay_us(x)
 
 OneWire::OneWire(uint8_t pin)
 {
