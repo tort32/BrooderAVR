@@ -2,7 +2,7 @@
 
 #include "OneWire.h"
 
-#define DEBUG_VIA_SERIAL 1
+//#define DEBUG_VIA_SERIAL 1
 
 #ifdef DEBUG_VIA_SERIAL
   #include "HardwareSerial.h"

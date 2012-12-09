@@ -104,6 +104,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\wiring_analog.c"
+				>
+			</File>
+			<File
 				RelativePath=".\wiring_digital.c"
 				>
 			</File>
@@ -127,6 +131,10 @@
 			</File>
 			<File
 				RelativePath=".\DS18B20.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KeyPad.h"
 				>
 			</File>
 			<File

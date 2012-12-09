@@ -55,11 +55,18 @@ OneWire oneWire(2); // D2
 #include "DS18B20.h"
 DS18B20 temp(oneWire);
 
+#include "KeyPad.h"
+void onKeyPressed(byte);
+KeyPad keys(A0, onKeyPressed);
+
 #include "HardwareSerial.h"
 
 // OneWire ROMs for 1-wire temperature sensors
 const byte rom_max = 2;
 byte rom[rom_max][8];
+
+byte tmp1 = 255;
+byte tmp2 = 255;
 
 /* ------------------------------------------------------------------------- */
 volatile byte STATUS = 0x0; // this is 8 status bits
@@ -77,9 +84,9 @@ void beep(byte beep_cnt)
   for(; beep_cnt; --beep_cnt)
   {
     setbits(ALARM_OUT_PORT, ALARM_OUT);
-    delay(250);
+    delay(200);
     clrbits(ALARM_OUT_PORT, ALARM_OUT);
-    delay(250);
+    delay(200);
   }
 }
 
@@ -132,6 +139,12 @@ void lcd_print_dight3(byte value)
 
 /* ------------------------------------------------------------------------- */
 
+void onKeyPressed(byte key)
+{
+  Serial.print("KEY = ");
+  Serial.println(key, DEC);
+}
+
 void setup(void)
 {
   DDRB = ALARM_OUT | LED;
@@ -163,9 +176,6 @@ void setup(void)
   lcd.clear();
 }
 
-byte tmp1 = 255;
-byte tmp2 = 255;
-
 void loop(void)
 {
   tglbits(LED_PORT, LED);
@@ -178,6 +188,8 @@ void loop(void)
     temp.start();
     setbits(STATUS,TEMP_STARTED);
   }
+
+  byte key = keys.read();
 
   RTC.read();
 
