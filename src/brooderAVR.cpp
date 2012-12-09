@@ -37,7 +37,10 @@
 */
 
 // alarm output
-#define ALARM_OUT _BV(PB5)// D13
+#define LED _BV(PB5) // D13
+#define LED_PORT PORTB
+
+#define ALARM_OUT _BV(PB2)
 #define ALARM_OUT_PORT PORTB
 
 /* ------------------------------------------------------------------------- */
@@ -49,12 +52,47 @@ LCD4Bit_mod lcd(2); // 16x2 literal
 #include "OneWire.h"
 OneWire oneWire(2); // D2
 
-const byte rom_max = 2;
-byte rom[rom_max][8]; // OneWire ROMs
+#include "DS18B20.h"
+DS18B20 temp(oneWire);
 
 #include "HardwareSerial.h"
-/* ------------------------------------------------------------------------- */
 
+// OneWire ROMs for 1-wire temperature sensors
+const byte rom_max = 2;
+byte rom[rom_max][8];
+
+/* ------------------------------------------------------------------------- */
+volatile byte STATUS = 0x0; // this is 8 status bits
+
+#define ERROR _BV(0)
+#define TEMP_STARTED _BV(1)
+
+inline bool is_error()
+{
+  return is_bits(STATUS, ERROR);
+}
+
+void beep(byte beep_cnt)
+{
+  for(; beep_cnt; --beep_cnt)
+  {
+    setbits(ALARM_OUT_PORT, ALARM_OUT);
+    delay(250);
+    clrbits(ALARM_OUT_PORT, ALARM_OUT);
+    delay(250);
+  }
+}
+
+void error(const char* msg)
+{
+  setbits(STATUS, ERROR); // rise up error status bit
+
+  lcd.clear();
+  lcd.printIn(msg);
+  Serial.println(msg);
+}
+
+/* ------------------------------------------------------------------------- */
 void lcd_print_dight(byte value)
 {
   byte ch = value < 10 ? value + '0' : value - 10 + 'A';
@@ -92,91 +130,63 @@ void lcd_print_dight3(byte value)
   lcd_print_dight(d1);
 }
 
-void temp_start(byte device)
-{
-  oneWire.reset();
-  oneWire.select(rom[device]);
-  oneWire.write(0x44,1);
-}
-
-bool temp_is_ready(byte device)
-{
-  
-}
-
-byte temp_read(byte device)
-{
-  byte present = oneWire.reset();
-  oneWire.select(rom[device]);
-  oneWire.write(0xBE); // Read Scratchpad
-
-  byte data[9]; // we need 9 bytes
-  for (byte i = 0; i < 9; i++) {
-    data[i] = oneWire.read();
-  }
-  //Serial.print( OneWire::crc8( data, 8), HEX);
-  //Serial.println();
-
-  uint32_t raw = (data[1] << 8) | data[0];
-  byte cfg = (data[4] & 0x60);
-  if (cfg == 0x00) raw = raw << 3;  // 9 bit resolution, 93.75 ms
-  else if (cfg == 0x20) raw = raw << 2; // 10 bit res, 187.5 ms
-  else if (cfg == 0x40) raw = raw << 1; // 11 bit res, 375 ms
-  // default is 12 bit resolution, 750 ms conversion time
-  byte celsius = raw / 16;
-
-  return celsius;
-}
-
 /* ------------------------------------------------------------------------- */
 
 void setup(void)
 {
-  Serial.begin(9600);
-
-  DDRB = ALARM_OUT;
-
-  int rom_cnt = 0;
-  while ( rom_cnt<rom_max && oneWire.search(rom[rom_cnt])) {
-    if ( OneWire::crc8( rom[rom_cnt], 7) != rom[rom_cnt][7]) {
-      Serial.println("ROM CRC is not valid!");
-      return;
-    }
-    if(rom[rom_cnt][0] == 0x28)
-    {
-      rom_cnt++;
-    }
-  }
-
-  oneWire.reset_search();
-  //delay(250);
-
-  if(rom_cnt != 2)
-  {
-    Serial.println("Can't find ROMs");
-    return;
-  }
+  DDRB = ALARM_OUT | LED;
 
   lcd.init();
   lcd.clear();
-  //lcd.printIn("hello");
+  lcd.printIn("Hello");
+
+  Serial.begin(9600);
+
+  byte rom_found = temp.search(rom, rom_max);
+
+  //delay(250);
+
+  if(rom_found != rom_max)
+  {
+    error("Lost TEMP");
+
+    lcd.cursorTo(2,0);
+    lcd.printIn("Found ");
+    lcd_print_dight(rom_found);
+    lcd.print('/');
+    lcd_print_dight(rom_max);
+
+    beep(3);
+    return;
+  }
+
+  lcd.clear();
 }
 
-bool temp = true;
+byte tmp1 = 255;
+byte tmp2 = 255;
 
 void loop(void)
 {
-  tglbits(ALARM_OUT_PORT, ALARM_OUT);
+  tglbits(LED_PORT, LED);
 
-  temp_start(0);
-  temp_start(1);
+  if(is_error())
+    return;
+
+  if(!is_bits(STATUS,TEMP_STARTED))
+  {
+    temp.start();
+    setbits(STATUS,TEMP_STARTED);
+  }
 
   RTC.read();
 
-  delay(750);
-
-  byte tmp1=temp_read(0);
-  byte tmp2=temp_read(1);
+  if(temp.is_ready())
+  {
+    temp.read(rom[0], &tmp1);
+    temp.read(rom[1], &tmp2);
+    clrbits(STATUS,TEMP_STARTED);
+  }
 
   // TIME
   lcd.cursorTo(1,0);

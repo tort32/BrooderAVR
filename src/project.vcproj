@@ -126,6 +126,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DS18B20.h"
+				>
+			</File>
+			<File
 				RelativePath=".\LCD4Bit_mod.h"
 				>
 			</File>

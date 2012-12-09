@@ -118,12 +118,12 @@ OneWire::OneWire(uint8_t pin)
 //
 // Returns 1 if a device asserted a presence pulse, 0 otherwise.
 //
-uint8_t OneWire::reset(void)
+uint8_t OneWire::reset(void) const
 {
 	IO_REG_TYPE mask = bitmask;
 	volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
 	uint8_t r;
-	uint8_t retries = 125;
+	/*uint8_t retries = 125;
 
 	noInterrupts();
 	DIRECT_MODE_INPUT(reg, mask);
@@ -132,19 +132,19 @@ uint8_t OneWire::reset(void)
 	do {
 		if (--retries == 0) return 0;
 		delayMicroseconds(2);
-	} while ( !DIRECT_READ(reg, mask));
+	} while ( !DIRECT_READ(reg, mask));*/
 
 	noInterrupts();
 	DIRECT_WRITE_LOW(reg, mask);
 	DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
 	interrupts();
-	delayMicroseconds(500);
+	delayMicroseconds(480); // 480us min
 	noInterrupts();
 	DIRECT_MODE_INPUT(reg, mask);	// allow it to float
-	delayMicroseconds(80);
+	delayMicroseconds(60); // slave wait 15-60us and set presence on 60-240us => master should read after 60-75us
 	r = !DIRECT_READ(reg, mask);
 	interrupts();
-	delayMicroseconds(420);
+	delayMicroseconds(240); // hold up to 480us min
 	return r;
 }
 
@@ -152,7 +152,7 @@ uint8_t OneWire::reset(void)
 // Write a bit. Port and bit is used to cut lookup time and provide
 // more certain timing.
 //
-void OneWire::write_bit(uint8_t v)
+void OneWire::write_bit(uint8_t v) const
 {
 	IO_REG_TYPE mask=bitmask;
 	volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
@@ -180,7 +180,7 @@ void OneWire::write_bit(uint8_t v)
 // Read a bit. Port and bit is used to cut lookup time and provide
 // more certain timing.
 //
-uint8_t OneWire::read_bit(void)
+uint8_t OneWire::read_bit(void) const
 {
 	IO_REG_TYPE mask=bitmask;
 	volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
@@ -205,7 +205,7 @@ uint8_t OneWire::read_bit(void)
 // go tri-state at the end of the write to avoid heating in a short or
 // other mishap.
 //
-void OneWire::write(uint8_t v, uint8_t power /* = 0 */) {
+void OneWire::write(uint8_t v, uint8_t power /* = 0 */) const {
     uint8_t bitMask;
 
     for (bitMask = 0x01; bitMask; bitMask <<= 1) {
@@ -219,7 +219,7 @@ void OneWire::write(uint8_t v, uint8_t power /* = 0 */) {
     }
 }
 
-void OneWire::write_bytes(const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
+void OneWire::write_bytes(const uint8_t *buf, uint16_t count, bool power /* = 0 */) const {
   for (uint16_t i = 0 ; i < count ; i++)
     write(buf[i]);
   if (!power) {
@@ -233,7 +233,7 @@ void OneWire::write_bytes(const uint8_t *buf, uint16_t count, bool power /* = 0 
 //
 // Read a byte
 //
-uint8_t OneWire::read() {
+uint8_t OneWire::read() const {
     uint8_t bitMask;
     uint8_t r = 0;
 
@@ -243,7 +243,7 @@ uint8_t OneWire::read() {
     return r;
 }
 
-void OneWire::read_bytes(uint8_t *buf, uint16_t count) {
+void OneWire::read_bytes(uint8_t *buf, uint16_t count) const {
   for (uint16_t i = 0 ; i < count ; i++)
     buf[i] = read();
 }
@@ -251,7 +251,7 @@ void OneWire::read_bytes(uint8_t *buf, uint16_t count) {
 //
 // Do a ROM select
 //
-void OneWire::select( uint8_t rom[8])
+void OneWire::select(uint8_t rom[8]) const
 {
     int i;
 
@@ -263,12 +263,12 @@ void OneWire::select( uint8_t rom[8])
 //
 // Do a ROM skip
 //
-void OneWire::skip()
+void OneWire::skip() const
 {
     write(0xCC);           // Skip ROM
 }
 
-void OneWire::depower()
+void OneWire::depower() const
 {
 	noInterrupts();
 	DIRECT_MODE_INPUT(baseReg, bitmask);
@@ -282,17 +282,17 @@ void OneWire::depower()
 // You do not need to do it for the first search, though you could.
 //
 void OneWire::reset_search()
-  {
+{
   // reset the search state
   LastDiscrepancy = 0;
   LastDeviceFlag = FALSE;
   LastFamilyDiscrepancy = 0;
   for(int i = 7; ; i--)
-    {
+  {
     ROM_NO[i] = 0;
-    if ( i == 0) break;
-    }
+    if (i == 0) break;
   }
+}
 
 //
 // Perform a search. If this function returns a '1' then it has
