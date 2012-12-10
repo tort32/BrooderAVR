@@ -14,7 +14,24 @@
 #define VKEY_NUM    5
 #define VKEY_NONE   0xFF
 
-const int adc_key_val[VKEY_NUM] = {30, 150, 360, 535, 760};
+
+//           VCC
+// SCHEME:    |        KEY    ADC LEVEL
+//  ________ [2k]
+//|-^RIGHT ^--+-->ADC  RIGHT =0(MIN)                                   =0
+//  ________ [330]                                                      MID=72
+//|-^  UP  ^--+        UP    =1023*(330)/(2k+330)                      =145
+//  ________ [620]                                                      MID=237
+//|-^ DWON ^--+        DOWN  =1023*(330+620)/(2k+330+620)              =329
+//  ________ [1k]                                                       MID=417
+//|-^ LEFT ^--+        LEFT  =1023*(330+620+1k)/(2k+330+620+1k)        =505
+//  ________ [3k3]                                                      MID=623
+//|-^SELECT^--+        SELECT=1023*(330+620+1k+3k3)/(2k+330+620+1k+3k3)=741
+//                                                                      MID=882
+//                     NONE  =1023(MAX)                                =1023
+
+//const int adc_key_val[VKEY_NUM] = {30, 150, 360, 535, 760}; // ADC LEVEL + 30
+const int adc_key_val[VKEY_NUM] = {72, 237, 417, 623, 882}; // ADC MIDDLE
 
 class KeyPad
 {
