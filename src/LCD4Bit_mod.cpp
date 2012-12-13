@@ -20,7 +20,6 @@ Usage:
 see the examples folder of this library distribution.
 
 */
-
 #include "LCD4Bit_mod.h"
 #include "arduino.h"		//all things wiring / arduino
 
@@ -30,11 +29,20 @@ extern "C" {
   #include <inttypes.h>
 }
 
+#include "stdafx.h"
+
 //command bytes for LCD
-#define CMD_CLR		0x01
-#define CMD_RIGHT	0x1C
-#define CMD_LEFT	0x18
-#define CMD_HOME	0x02
+#define CMD_CLEAR     0x01
+#define CMD_HOME      0x02
+#define CMD_ENTRYMODE 0x04
+#define LCD_CONTROL   0x08
+#define CMD_CURSHIFT  0x10
+#define CMD_FUNCSET   0x20
+#define CMD_SETCGRA   0x40
+#define CMD_SETDDRA   0x80
+
+#define CMD_RIGHT 0x1C
+#define CMD_LEFT  0x18
 
 // --------- PINS -------------------------------------
 //is the RW pin of the LCD under our control?  If we're only ever going to write to the LCD, we can use one less microcontroller pin, and just tie the LCD pin to the necessary signal, high or low.
@@ -48,41 +56,48 @@ int Enable = 9;
 //DB should be an unseparated group of pins  - because of lazy coding in pushNibble()
 int DB[] = {4, 5, 6, 7};  //wire these to DB4~7 on LCD.
 
+#define DATA_PORT PORTD
+
+#define DATA_PINS 0xF0
+#define DATA_PINS_LO_NIBBLE(x) ((x & 0x0f) << 4)
+#define DATA_PINS_HI_NIBBLE(x) (x & 0xf0)
+
+#define CONTROL_PORT PORTB
+#define CONTROL_RS _BV(PB0)
+#define CONTROL_EN _BV(PB1)
+#define CONTROL_RW _BV(PB4)
+
 //--------------------------------------------------------
 
 //how many lines has the LCD? (don't change here - specify on calling constructor)
 byte g_num_lines = 2;
+byte g_pos = 0;
 
 //pulse the Enable pin high (for a microsecond).
 //This clocks whatever command or data is in DB4~7 into the LCD controller.
 void LCD4Bit_mod::pulseEnablePin(){
-  digitalWrite(Enable,LOW);
+  clrbits(CONTROL_PORT, CONTROL_EN); //digitalWrite(Enable,LOW);
   delayMicroseconds(1);
   // send a pulse to enable
-  digitalWrite(Enable,HIGH);
+  setbits(CONTROL_PORT, CONTROL_EN); //digitalWrite(Enable,HIGH);
   delayMicroseconds(1); // enable pulse must be >450ns
-  digitalWrite(Enable,LOW);
-  delayMicroseconds(37); // commands need > 37us to settle
+  clrbits(CONTROL_PORT, CONTROL_EN); //digitalWrite(Enable,LOW);
+  //delayMicroseconds(40); // commands need > 37us to settle
 }
 
 //push a nibble of data through the the LCD's DB4~7 pins, clocking with the Enable pin.
 //We don't care what RS and RW are, here.
 void LCD4Bit_mod::pushNibble(uint8_t value){
-  int val_nibble= value & 0x0F;  //clean the value.  (unnecessary)
-
-  for (uint8_t i=DB[0]; i <= DB[3]; i++) {
-    digitalWrite(i,val_nibble & 01);
-    val_nibble >>= 1;
-  }
+  wrtbits(DATA_PORT, DATA_PINS_LO_NIBBLE(value), DATA_PINS);
   pulseEnablePin();
 }
 
 //push a byte of data through the LCD's DB4~7 pins, in two steps, clocking each with the enable pin.
 void LCD4Bit_mod::pushByte(uint8_t value){
-  int val_lower = value & 0x0F;
-  int val_upper = value >> 4;
-  pushNibble(val_upper);
-  pushNibble(val_lower);
+  wrtbits(DATA_PORT, DATA_PINS_HI_NIBBLE(value), DATA_PINS);
+  pulseEnablePin();
+  wrtbits(DATA_PORT, DATA_PINS_LO_NIBBLE(value), DATA_PINS);
+  pulseEnablePin();
 }
 
 
@@ -97,50 +112,76 @@ LCD4Bit_mod::LCD4Bit_mod(uint8_t num_lines) {
 }
 
 void LCD4Bit_mod::commandWriteNibble(uint8_t nibble) {
-  digitalWrite(RS, LOW);
+  clrbits(CONTROL_PORT, CONTROL_RS);
 #ifdef USING_RW
-  digitalWrite(RW, LOW);
+  clrbits(CONTROL_PORT, CONTROL_RW);
 #endif
   pushNibble(nibble);
+  delayMicroseconds(40); // commands need > 37us to settle
 }
 
 
 void LCD4Bit_mod::commandWrite(uint8_t value) {
-  digitalWrite(RS, LOW);
+  clrbits(CONTROL_PORT, CONTROL_RS);
 #ifdef USING_RW
-  digitalWrite(RW, LOW);
+  clrbits(CONTROL_PORT, CONTROL_RW);
 #endif
   pushByte(value);
-  //TODO: perhaps better to add a delay after EVERY command, here.  many need a delay, apparently.
+  delayMicroseconds(40); // commands need > 37us to settle
 }
 
 
 //print the given character at the current cursor position. overwrites, doesn't insert.
 void LCD4Bit_mod::print(uint8_t value) {
   //set the RS and RW pins to show we're writing data
-  digitalWrite(RS, HIGH);
+  setbits(CONTROL_PORT, CONTROL_RS);//digitalWrite(RS, HIGH);
 #ifdef USING_RW
-  digitalWrite(RW, LOW);
+  clrbits(CONTROL_PORT, CONTROL_RW);//digitalWrite(RW, LOW);
 #endif
   //let pushByte worry about the intricacies of Enable, nibble order.
   pushByte(value);
+  delayMicroseconds(40); // commands need > 37us to settle
+  g_pos++;
 }
 
 
 //print the given string to the LCD at the current cursor position.  overwrites, doesn't insert.
 //While I don't understand why this was named printIn (PRINT IN?) in the original LiquidCrystal library, I've preserved it here to maintain the interchangeability of the two libraries.
 void LCD4Bit_mod::printIn(const char* msg) {
+  setbits(CONTROL_PORT, CONTROL_RS);//digitalWrite(RS, HIGH);
+#ifdef USING_RW
+  clrbits(CONTROL_PORT, CONTROL_RW);//digitalWrite(RW, LOW);
+#endif
   uint8_t i;  //fancy int.  avoids compiler warning when comparing i with strlen()'s uint8_t
-  for (i=0;i < strlen(msg);i++){
-    print(msg[i]);
+  uint8_t len = strlen(msg);
+  for (i=0;i < len ;i++){
+    //print(msg[i]);
+    //let pushByte worry about the intricacies of Enable, nibble order.
+    pushByte(msg[i]);
+    delayMicroseconds(40); // commands need > 37us to settle
   }
+  g_pos+=len;
 }
 
 
 //send the clear screen command to the LCD
 void LCD4Bit_mod::clear(){
-  commandWrite(CMD_CLR);
-  delay(1);
+  clrbits(CONTROL_PORT, CONTROL_RS);
+#ifdef USING_RW
+  clrbits(CONTROL_PORT, CONTROL_RW);
+#endif
+  pushByte(CMD_CLEAR);
+  delayMicroseconds(1640); // 1.64ms
+}
+
+void LCD4Bit_mod::home(){
+  clrbits(CONTROL_PORT, CONTROL_RS);
+#ifdef USING_RW
+  clrbits(CONTROL_PORT, CONTROL_RW);
+#endif
+  pushByte(CMD_HOME);
+  delayMicroseconds(1640); // 1.64ms
+  g_pos = 0;
 }
 
 
@@ -192,14 +233,15 @@ void LCD4Bit_mod::init() {
   delayMicroseconds(60);
 
   //clear display
-  commandWrite(0x01);
+  commandWrite(CMD_CLEAR);
   delay(3);
 
   // entry mode set: 06
   // increment automatically, display shift, entire shift off
   commandWrite(0x06);
-
   delay(1);//TODO: remove unnecessary delays
+
+  g_pos = 0;
 }
 
 
@@ -207,10 +249,6 @@ void LCD4Bit_mod::init() {
 //move the cursor to the given absolute position.  line numbers start at 1.
 //if this is not a 2-line LCD4Bit_mod instance, will always position on first line.
 void LCD4Bit_mod::cursorTo(uint8_t line_num, uint8_t x){
-  //first, put cursor home
-  commandWrite(CMD_HOME);
-
-  //if we are on a 1-line display, set line_num to 1st line, regardless of given
   if (g_num_lines==1){
     line_num = 1;
   }
@@ -218,10 +256,7 @@ void LCD4Bit_mod::cursorTo(uint8_t line_num, uint8_t x){
   if (line_num == 2){
     x += 0x40;
   }
-  //advance the cursor to the right according to position. (second line starts at position 40).
-  for (uint8_t i=0; i<x; i++) {
-    commandWrite(0x14);
-  }
+  commandWrite(CMD_SETDDRA | x);
 }
 
 //scroll whole display to left

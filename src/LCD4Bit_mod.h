@@ -11,6 +11,7 @@ public:
   void print(uint8_t value);
   void printIn(const char* msg);
   void clear();
+  void home();
   //non-core---------------
   void cursorTo(uint8_t line_num, uint8_t x);
   void leftScroll(uint8_t chars, uint8_t delay_time);

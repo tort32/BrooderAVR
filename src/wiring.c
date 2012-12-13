@@ -106,7 +106,7 @@ unsigned long micros() {
 	return ((m << 8) + t) * (64 / clockCyclesPerMicrosecond());
 }
 
-void delay(unsigned long ms)
+/*void delay(unsigned long ms)
 {
 	uint16_t start = (uint16_t)micros();
 
@@ -116,10 +116,10 @@ void delay(unsigned long ms)
 			start += 1000;
 		}
 	}
-}
+}*/
 
 /* Delay for the given number of microseconds.  Assumes a 8 or 16 MHz clock. */
-void delayMicroseconds(unsigned int us)
+/*void delayMicroseconds(unsigned int us)
 {
 	// calling avrlib's delay_us() function with low values (e.g. 1 or
 	// 2 microseconds) gives delays longer than desired.
@@ -184,7 +184,7 @@ void delayMicroseconds(unsigned int us)
 		"1: sbiw %0,1" "\n\t" // 2 cycles
 		"brne 1b" : "=w" (us) : "0" (us) // 2 cycles
 	);
-}
+}*/
 
 void init()
 {

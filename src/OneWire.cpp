@@ -95,11 +95,9 @@ sample code bearing this copyright.
 // Branding Policy.
 //--------------------------------------------------------------------------
 */
-
 #include "OneWire.h"
 
-#include <util/delay.h>
-#define delayMicroseconds(x) _delay_us(x)
+#include "stdafx.h"
 
 OneWire::OneWire(uint8_t pin)
 {

@@ -25,7 +25,10 @@
   //#define ATMEGA8
 
   #ifndef TWI_FREQ
-  #define TWI_FREQ 100000L
+  // 1MHz
+  #define TWI_FREQ 25000L
+  // 8MHz
+  //#define TWI_FREQ 100000L
   #endif
 
   #ifndef TWI_BUFFER_LENGTH

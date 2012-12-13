@@ -5,6 +5,11 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
+#include <util/delay.h>
+
+// Override Arduino delays functions
+#define delayMicroseconds(x) _delay_us(x)
+#define delay(x) _delay_ms(x)
 
 #define setbits(port,mask)	(port)|=(mask)
 #define clrbits(port,mask)	(port)&=~(mask)

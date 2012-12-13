@@ -106,8 +106,8 @@ void analogWrite(uint8_t, int);
 
 unsigned long millis(void);
 unsigned long micros(void);
-void delay(unsigned long);
-void delayMicroseconds(unsigned int us);
+//void delay(unsigned long);
+//void delayMicroseconds(unsigned int us);
 
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout);
 

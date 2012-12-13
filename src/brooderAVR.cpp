@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include <util/delay.h>
 
 /* ----------------------- hardware I/O abstraction ------------------------ */
 
@@ -191,7 +190,12 @@ void loop(void)
 
   byte key = keys.read();
 
-  RTC.read();
+  static byte rtc_cnt = 0;
+  if(++rtc_cnt == 20)
+  {
+    RTC.read(); // bottleneck ~100ms
+    rtc_cnt = 0;
+  }
 
   if(temp.is_ready())
   {
@@ -202,31 +206,31 @@ void loop(void)
 
   // TIME
   lcd.cursorTo(1,0);
-  lcd_print_dight(RTC.get(DS1307::HOUR_HI));
-  lcd_print_dight(RTC.get(DS1307::HOUR_LO));
-  lcd.print(':');
-  lcd_print_dight(RTC.get(DS1307::MIN_HI));
-  lcd_print_dight(RTC.get(DS1307::MIN_LO));
-  lcd.print(':');
-  lcd_print_dight(RTC.get(DS1307::SEC_HI));
-  lcd_print_dight(RTC.get(DS1307::SEC_LO));
+  lcd_print_dight(RTC.get(DS1307::HOUR_HI)); // 1
+  lcd_print_dight(RTC.get(DS1307::HOUR_LO)); // 2
+  lcd.print(':'); // 3
+  lcd_print_dight(RTC.get(DS1307::MIN_HI)); // 4
+  lcd_print_dight(RTC.get(DS1307::MIN_LO)); // 5
+  lcd.print(':'); // 6
+  lcd_print_dight(RTC.get(DS1307::SEC_HI)); // 7
+  lcd_print_dight(RTC.get(DS1307::SEC_LO)); // 8
 
-  lcd.print(' ');
-  lcd_print_dight2(tmp1);
+  lcd.print(' '); // 9
+  lcd_print_dight2(tmp1); // 10-11
 
   // DATE
   lcd.cursorTo(2,0);
-  lcd_print_dight(RTC.get(DS1307::DATE_HI));
-  lcd_print_dight(RTC.get(DS1307::DATE_LO));
-  lcd.print('/');
-  lcd_print_dight(RTC.get(DS1307::MONTH_HI));
-  lcd_print_dight(RTC.get(DS1307::MONTH_LO));
-  lcd.print('/');
-  lcd_print_dight(RTC.get(DS1307::YEAR_HI));
-  lcd_print_dight(RTC.get(DS1307::YEAR_LO));
+  lcd_print_dight(RTC.get(DS1307::DATE_HI)); // 1
+  lcd_print_dight(RTC.get(DS1307::DATE_LO)); // 2
+  lcd.print('/'); // 3
+  lcd_print_dight(RTC.get(DS1307::MONTH_HI)); // 4
+  lcd_print_dight(RTC.get(DS1307::MONTH_LO)); // 5
+  lcd.print('/'); // 6
+  lcd_print_dight(RTC.get(DS1307::YEAR_HI)); // 7
+  lcd_print_dight(RTC.get(DS1307::YEAR_LO)); // 8
 
-  lcd.print(' ');
-  lcd_print_dight2(tmp2);
+  lcd.print(' '); // 9
+  lcd_print_dight2(tmp2); // 10-11
 }
 
 /* ------------------------------------------------------------------------- */
