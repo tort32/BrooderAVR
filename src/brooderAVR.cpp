@@ -72,6 +72,7 @@ volatile byte STATUS = 0x0; // this is 8 status bits
 
 #define ERROR _BV(0)
 #define TEMP_STARTED _BV(1)
+#define TEMP_ALARM _BV(2)
 
 inline bool is_error()
 {
@@ -172,37 +173,31 @@ void setup(void)
     return;
   }
 
+  delay(1000);
+
   lcd.clear();
 }
 
-void loop(void)
+void update()
 {
-  tglbits(LED_PORT, LED);
-
-  if(is_error())
-    return;
-
+  // Start temperature conversion
   if(!is_bits(STATUS,TEMP_STARTED))
   {
     temp.start();
     setbits(STATUS,TEMP_STARTED);
   }
 
-  byte key = keys.read();
-
-  static byte rtc_cnt = 0;
-  if(++rtc_cnt == 20)
-  {
-    RTC.read(); // bottleneck ~100ms
-    rtc_cnt = 0;
-  }
-
+  // Check temperature conversion is done
   if(temp.is_ready())
   {
+    // Read temperature values
     temp.read(rom[0], &tmp1);
     temp.read(rom[1], &tmp2);
     clrbits(STATUS,TEMP_STARTED);
   }
+
+  // Read time from RTC
+  RTC.read();
 
   // TIME
   lcd.cursorTo(1,0);
@@ -231,6 +226,35 @@ void loop(void)
 
   lcd.print(' '); // 9
   lcd_print_dight2(tmp2); // 10-11
+
+  // Switch on alarm signal on alarm status
+  wrtbits(ALARM_OUT_PORT, is_bits(STATUS, TEMP_ALARM) ? ALARM_OUT : 0, ALARM_OUT);
+}
+
+void loop(void)
+{
+  // This is a heartbeat pulse
+  // Used for debugging cycle time
+  tglbits(LED_PORT, LED);
+
+  if(is_error())
+    return;
+
+  // Keys should be responsive
+  // So update it every cycle
+  byte key = keys.read(); // bottleneck
+
+  // 'update' call used to update RTC, Temperature and LCD.
+  // We should avoid to call it on every cycle since it takes significant time (about 25ms).
+  // 'update_cnt_max' defines how mush cycles we should skip to call update.
+  // This value is determined empirical from real cycle speed.
+  static byte update_cnt = 0;
+  const byte update_cnt_max = 64;
+  if(++update_cnt > update_cnt_max)
+  {
+    update_cnt = 0;
+    update();
+  }
 }
 
 /* ------------------------------------------------------------------------- */

@@ -436,7 +436,7 @@ clean_list :
 	$(REMOVE) $(TARGET).hex
 	$(REMOVE) $(TARGET).eep
 	$(REMOVE) $(TARGET).cof
-	$(REMOVE) $(TARGET).elf
+	# $(REMOVE) $(TARGET).elf
 	$(REMOVE) $(TARGET).map
 	$(REMOVE) $(TARGET).sym
 	$(REMOVE) $(TARGET).lss
