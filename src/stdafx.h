@@ -26,9 +26,65 @@
 
 /* ARDUINO ENVIRONMENT */
 #include "Arduino.h"
+#include "HardwareSerial.h"
+
+class TempManager;
+extern TempManager temp;
 /*
 #include "Wire.h"
 #include "OneWire.h"
 #include "LCD4Bit_mod.h"
 #include "DS1307.h"
 */
+
+/* ----------------------- hardware I/O abstraction ------------------------ */
+
+/*
+// temperature 1-wire sensors
+#define TEMP_1WIRE _BV(PD2) // D2
+#define TEMP_1WIRE_PORT PORTD
+
+// light sensor
+#define LIGHT_IN _BV(PC1) // A1
+#define LIGHT_PORT PORTC
+
+// real time clock
+#define TIME_SDA _BV(PC4) // A4
+#define TIME_SCL _BV(PC5) // A5
+#define TIME_PORT PORTC
+
+// LCD data bus
+#define LCD_DATA_D4 _BV(PD4) // D4
+#define LCD_DATA_D5 _BV(PD5) // D5
+#define LCD_DATA_D6 _BV(PD6) // D6
+#define LCD_DATA_D7 _BV(PD7) // D7
+#define LCD_DATA (LCD_DATA_D4|LCD_DATA_D5|LCD_DATA_D6|LCD_DATA_D7)
+#define LCD_DATA_PORT PORTD
+
+// LCD register control
+#define LCD_REG_RS _BV(PB0) // D8
+#define LCD_REG_E _BV(PB1) // D9
+#define LCD_REG (LCD_REG_RS|LCD_REG_E)
+#define LCD_REG_PORT PORTB
+
+// LCD keys
+#define LCD_BUT_IN _BV(PC0) // A0
+#define LCD_BUT_IN_PORT PORTC
+*/
+
+// alarm output
+#define LED _BV(PB5) // D13
+#define LED_PORT PORTB
+
+#define ALARM_OUT _BV(PB2)
+#define ALARM_OUT_PORT PORTB
+
+//////////////////////////////////////////////////////////////////////////
+bool is_error();
+void error(const char* msg);
+
+bool is_alarm();
+void set_alarm(bool alarm);
+
+void beep(byte beep_cnt);
+//////////////////////////////////////////////////////////////////////////

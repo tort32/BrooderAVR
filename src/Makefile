@@ -4,7 +4,7 @@ MCU = atmega328
 F_CPU = 1000000
 # Название файла проекта (без расширения)
 TARGET = brooderAVR
-SOURCE = $(TARGET) wiring LCD4Bit_mod wiring_digital DS1307 Wire twi new Print WString OneWire HardwareSerial wiring_analog
+SOURCE = $(TARGET) stdafx wiring LCD4Bit_mod wiring_digital DS1307 Wire twi new Print WString OneWire HardwareSerial wiring_analog
 # Используемый программатор (для AVRDUDE)
 #AVRDUDE_PROGRAMMER = stk200
 AVRDUDE_PROGRAMMER = usbtiny

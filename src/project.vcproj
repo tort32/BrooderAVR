@@ -92,6 +92,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\stdafx.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\twi.c"
 				>
 			</File>
@@ -159,6 +163,10 @@
 			</File>
 			<File
 				RelativePath=".\twi.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UI.h"
 				>
 			</File>
 			<File

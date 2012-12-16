@@ -1,12 +1,9 @@
 #pragma once
 
 #include "OneWire.h"
+#include "stdafx.h"
 
 //#define DEBUG_VIA_SERIAL 1
-
-#ifdef DEBUG_VIA_SERIAL
-  #include "HardwareSerial.h"
-#endif
 
 class DS18B20
 {
@@ -133,4 +130,95 @@ public:
   }
 private:
   OneWire* ow;
+};
+
+#include "LCD4Bit_mod.h"
+
+const byte rom_max = 2; // Number of sensors
+class TempManager: private DS18B20
+{
+public:
+  TempManager(const OneWire& oneWire)
+    : DS18B20(oneWire)
+  {
+    status = kInvalid;
+    for(byte i=0;i<rom_max;++i)
+      value[i]=255;
+  }
+
+  void init()
+  {
+    byte rom_found = search(rom, rom_max);
+
+    if(rom_found != rom_max)
+    {
+      error("Lost TEMP");
+
+      LCD.cursorTo(2,0);
+      LCD.printIn("Found ");
+      LCD.printDight(rom_found);
+      LCD.print('/');
+      LCD.printDight(rom_max);
+
+      beep(3);
+      return;
+    }
+
+    status = kIdle;
+  }
+
+  void update()
+  {
+    if(status == kIdle)
+    {
+      start(); // ~2.9ms
+      status = kConversion;
+      return;
+    }
+
+    if(status == kConversion)
+    {
+      if(is_ready()) // ~100us
+      {
+        status = kRead;
+        return;
+      }
+      clrbits(LED_PORT, LED);
+    }
+
+    if(status & kRead)
+    {
+      byte id = status & kReadMask;
+      if(id < rom_max)
+      {
+        read(rom[id], &value[id]); // ~21.6ms
+        status = kRead | (++id);
+        return;
+      }
+      else
+      {
+        status = kIdle;
+        return;
+      }
+    }
+  }
+
+  byte operator [](byte device)
+  {
+    return value[device];
+  }
+
+  private:
+    enum
+    {
+      kIdle    = 0x0,
+      kConversion = 0x1,
+      kRead = 0x10,
+      kReadMask = 0x0f,
+      kInvalid = 0x80,
+    };
+    const DS18B20* ds;
+    byte rom[rom_max][8]; // OneWire ROMs for 1-wire temperature sensors
+    byte value[rom_max];
+    byte status;
 };

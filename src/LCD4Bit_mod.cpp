@@ -31,6 +31,8 @@ extern "C" {
 
 #include "stdafx.h"
 
+LCD4Bit_mod LCD;
+
 //command bytes for LCD
 #define CMD_CLEAR     0x01
 #define CMD_HOME      0x02
@@ -71,7 +73,6 @@ int DB[] = {4, 5, 6, 7};  //wire these to DB4~7 on LCD.
 
 //how many lines has the LCD? (don't change here - specify on calling constructor)
 byte g_num_lines = 2;
-byte g_pos = 0;
 
 //pulse the Enable pin high (for a microsecond).
 //This clocks whatever command or data is in DB4~7 into the LCD controller.
@@ -102,6 +103,10 @@ void LCD4Bit_mod::pushByte(uint8_t value){
 
 
 //stuff the library user might call---------------------------------
+
+//constructor. Use default num of lines
+LCD4Bit_mod::LCD4Bit_mod() {}
+
 //constructor.  num_lines must be 1 or 2, currently.
 LCD4Bit_mod::LCD4Bit_mod(uint8_t num_lines) {
   g_num_lines = num_lines;
@@ -141,7 +146,6 @@ void LCD4Bit_mod::print(uint8_t value) {
   //let pushByte worry about the intricacies of Enable, nibble order.
   pushByte(value);
   delayMicroseconds(40); // commands need > 37us to settle
-  g_pos++;
 }
 
 
@@ -160,7 +164,6 @@ void LCD4Bit_mod::printIn(const char* msg) {
     pushByte(msg[i]);
     delayMicroseconds(40); // commands need > 37us to settle
   }
-  g_pos+=len;
 }
 
 
@@ -181,7 +184,6 @@ void LCD4Bit_mod::home(){
 #endif
   pushByte(CMD_HOME);
   delayMicroseconds(1640); // 1.64ms
-  g_pos = 0;
 }
 
 
@@ -240,8 +242,6 @@ void LCD4Bit_mod::init() {
   // increment automatically, display shift, entire shift off
   commandWrite(0x06);
   delay(1);//TODO: remove unnecessary delays
-
-  g_pos = 0;
 }
 
 
@@ -265,6 +265,43 @@ void LCD4Bit_mod::leftScroll(uint8_t num_chars, uint8_t delay_time){
     commandWrite(CMD_LEFT);
     delay(delay_time);
   }
+}
+
+void LCD4Bit_mod::printDight(uint8_t value)
+{
+  uint8_t ch = value < 10 ? value + '0' : value - 10 + 'A';
+  print(ch);
+}
+
+void LCD4Bit_mod::printHex(uint8_t value)
+{
+  printDight(value);
+}
+
+void LCD4Bit_mod::printHex2(uint8_t value)
+{
+  uint8_t h2 = value / 16;
+  uint8_t h1 = value % 16;
+  printHex(h2);
+  printHex(h1);
+}
+
+void LCD4Bit_mod::printDight2(uint8_t value)
+{
+  uint8_t d2 = value / 10;
+  uint8_t d1 = value % 10;
+  printDight(d2);
+  printDight(d1);
+}
+
+void LCD4Bit_mod::printDight3(uint8_t value)
+{
+  uint8_t d3 = value / 100;
+  uint8_t d2 = (value / 10) % 10;
+  uint8_t d1 = value % 10;
+  printDight(d3);
+  printDight(d2);
+  printDight(d1);
 }
 
 //Improvements ------------------------------------------------

@@ -98,3 +98,4 @@ private:
   OnKeyPressedFP onKeyPressed;
 };
 
+extern KeyPad KEYS;
