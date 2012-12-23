@@ -32,6 +32,4 @@ private:
   void pushByte(uint8_t value);
 };
 
-extern LCD4Bit_mod LCD;
-
 #endif

@@ -1,10 +1,6 @@
 #pragma once
 
-//#define DEBUG_VIA_SERIAL 1
-
-#ifdef DEBUG_VIA_SERIAL
-#include "HardwareSerial.h"
-#endif
+//#define DEBUG_KEYPAD 1
 
 #define VKEY_RIGHT  0
 #define VKEY_UP     1
@@ -22,7 +18,7 @@
 //  ________ [330]                                                      MID=72
 //|-^  UP  ^--+        UP    =1023*(330)/(2k+330)                      =145
 //  ________ [620]                                                      MID=237
-//|-^ DWON ^--+        DOWN  =1023*(330+620)/(2k+330+620)              =329
+//|-^ DOWN ^--+        DOWN  =1023*(330+620)/(2k+330+620)              =329
 //  ________ [1k]                                                       MID=417
 //|-^ LEFT ^--+        LEFT  =1023*(330+620+1k)/(2k+330+620+1k)        =505
 //  ________ [3k3]                                                      MID=623
@@ -30,8 +26,8 @@
 //                                                                      MID=882
 //                     NONE  =1023(MAX)                                =1023
 
-//const int adc_key_val[VKEY_NUM] = {30, 150, 360, 535, 760}; // ADC LEVEL + 30
-const int adc_key_val[VKEY_NUM] = {72, 237, 417, 623, 882}; // ADC MIDDLE
+const uint16_t adc_key_val[VKEY_NUM] =
+  { 72, 237, 417, 623, 882 }; // ADC MIDDLE
 
 class KeyPad
 {
@@ -49,8 +45,8 @@ public:
   // Returns active key
   inline byte read()
   {
-    int adc_key_in = analogRead(analogPin);
-#ifdef DEBUG_VIA_SERIAL
+    uint16_t adc_key_in = analogRead(analogPin);
+#ifdef DEBUG_KEYPAD
     Serial.print("KeyPad APIN = ");
     Serial.println(adc_key_in, HEX);
 #endif
@@ -58,13 +54,13 @@ public:
     if(key != new_key)
     {
       key = new_key;
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_KEYPAD
       Serial.print("KeyPad KEY = ");
       Serial.println(key, DEC);
 #endif
       if(onKeyPressed != NULL)
       {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_KEYPAD
         Serial.println("KeyPad onKeyPressed");
 #endif
         (*onKeyPressed)(key);
@@ -81,7 +77,7 @@ public:
 //private:
 
   // Convert ADC value to key number
-  static byte get_key(int adc_key_in)
+  static byte get_key(uint16_t adc_key_in)
   {
     for (byte k = 0; k < VKEY_NUM; ++k)
     {

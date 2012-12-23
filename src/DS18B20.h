@@ -3,7 +3,7 @@
 #include "OneWire.h"
 #include "stdafx.h"
 
-//#define DEBUG_VIA_SERIAL 1
+//#define DEBUG_DS18B20 1
 
 class DS18B20
 {
@@ -17,25 +17,25 @@ public:
   // Returns the number of found devices
   byte search(byte rom[][8], const byte rom_max)
   {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
     Serial.println("DS18B20 SEARCH");
 #endif
     byte rom_cnt = 0;
     while (rom_cnt < rom_max && ow->search(rom[rom_cnt])) {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
       Serial.print("ROM = ");
       for(byte i = 0; i < 8; ++i)
         Serial.print(rom[rom_cnt][i], HEX);
 #endif
       if (OneWire::crc8(rom[rom_cnt], 7) != rom[rom_cnt][7]) {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
         Serial.println(" CRC FAILED");
 #endif
         continue;
       }
       if (rom[rom_cnt][0] == 0x28)
       {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
         Serial.println(" DS18B20");
 #endif
         rom_cnt++;
@@ -50,11 +50,11 @@ public:
   // NOTE: if 1-wire reset was issued you have to make 44h command again before the reading time slot
   bool is_ready()
   {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
     Serial.print("DS18B20 CHECK ");
 #endif
     byte ready = ow->read_bit();
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
     Serial.print("R = ");
     Serial.println(ready, HEX);
 #endif
@@ -66,7 +66,7 @@ public:
   // This way ready status returns true only after all devices finished the conversion
   void start()
   {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
     Serial.println("DS18B20 START");
 #endif
     ow->reset();
@@ -78,7 +78,7 @@ public:
   // You can call DS18B20::is_ready to check the conversion is done
   void start(byte rom[8])
   {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
     Serial.println("DS18B20 START");
 #endif
     ow->reset();
@@ -89,7 +89,7 @@ public:
   // Reading temperatire in celsius from device
   bool read(byte rom[8], volatile byte* temp)
   {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
     Serial.print("DS18B20 READ ");
 #endif
     ow->reset();
@@ -106,7 +106,7 @@ public:
     byte crc = OneWire::crc8( data, 8);
     if(data[8] != crc)
     {
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
       Serial.println("CRC FAILED");
 #endif
       return false;
@@ -120,7 +120,7 @@ public:
     // default is 12 bit resolution, 750 ms conversion time
     byte celsius = raw / 16;
 
-#ifdef DEBUG_VIA_SERIAL
+#ifdef DEBUG_DS18B20
     Serial.print("T = ");
     Serial.println(celsius, DEC);
 #endif
@@ -133,6 +133,7 @@ private:
 };
 
 #include "LCD4Bit_mod.h"
+#include "EEPROM.h"
 
 const byte rom_max = 2; // Number of sensors
 class TempManager: private DS18B20
@@ -152,7 +153,7 @@ public:
 
     if(rom_found != rom_max)
     {
-      error("Lost TEMP");
+      ALARM.error("Lost TEMP");
 
       LCD.cursorTo(2,0);
       LCD.printIn("Found ");
@@ -160,7 +161,7 @@ public:
       LCD.print('/');
       LCD.printDight(rom_max);
 
-      beep(3);
+      ALARM.beep(3);
       return;
     }
 
@@ -183,7 +184,6 @@ public:
         status = kRead;
         return;
       }
-      clrbits(LED_PORT, LED);
     }
 
     if(status & kRead)
@@ -205,7 +205,16 @@ public:
 
   byte operator [](byte device)
   {
-    return value[device];
+    if(EEPROM.get().temp_swtich == 0)
+    {
+      // default order
+      return value[device];
+    }
+    else
+    {
+      // inverse order
+      return value[(rom_max - 1) - device];
+    }
   }
 
   private:

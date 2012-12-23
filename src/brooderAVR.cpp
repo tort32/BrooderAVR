@@ -1,26 +1,26 @@
 #include "stdafx.h"
+#include "Alarm.h"
 #include "LCD4Bit_mod.h"
-#include "DS1307.h"
-#include "OneWire.h"
-#include "DS18B20.h"
-#include "KeyPad.h"
+#include "HardwareSerial.h"
 #include "UI.h"
+#include "EEPROM.h"
+#include "System.h"
 
-OneWire oneWire(2); // D2
-TempManager temp(oneWire);
-
-UIManager ui;
 /* ------------------------------------------------------------------------- */
 void setup(void)
 {
-  DDRB = ALARM_OUT | LED;
+  Serial.begin(9600);
+
+  ALARM.init();
 
   LCD.init();
   LCD.printIn("Hello");
 
-  Serial.begin(9600);
+  EEPROM.init();
 
-  temp.init();
+  TEMP.init();
+
+  SYSTEM.init();
 
   delay(1000);
 
@@ -33,13 +33,13 @@ void loop(void)
   // Used for debugging cycle time
   //tglbits(LED_PORT, LED);
 
-  if(is_error())
+  if(ALARM.is_error())
     return;
 
   // Keys should be responsive
   // So update it every cycle
   setbits(LED_PORT, LED);
-  ui.inputKeys(); // ~1.8ms
+  UI.inputKeys(); // ~1.8ms
   clrbits(LED_PORT, LED);
 
   // Some update parts take much time to perform
@@ -53,7 +53,7 @@ void loop(void)
   {
   case 0:
     // Start temperature conversion
-    temp.update(); // up to 21.6ms at read
+    TEMP.update(); // up to 21.6ms at read
     break;
   case 1:
     // Read time from RTC
@@ -61,12 +61,14 @@ void loop(void)
     break;
   case 2:
     // LCD update
-    ui.outputLCD(); // ~5.4ms
+    UI.outputLCD(); // ~5.4ms
     break;
   case 3:
     // Switch on alarm signal on alarm status
-    wrtbits(ALARM_OUT_PORT, is_alarm() ? ALARM_OUT : 0, ALARM_OUT);
+    ALARM.update();
     break;
+  case 4:
+    SYSTEM.update();
   default:
     _delay_ms(20);
     break;

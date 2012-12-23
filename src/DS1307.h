@@ -42,6 +42,32 @@
 // include types & constants of Wire ic2 lib
 #include "Wire.h"
 
+
+// Simple general-purpose date/time class (no TZ / DST / leap second handling!)
+class DateTime {
+  // Source: https://github.com/adafruit/RTClib/blob/master/RTClib.h
+public:
+  DateTime(uint32_t t = 0);
+  DateTime(uint16_t d = 0);
+  DateTime(uint8_t yearOff, uint8_t month, uint8_t day,
+    uint8_t hour = 0, uint8_t min = 0, uint8_t sec = 0);
+  uint8_t year() const { return yOff; }
+  uint8_t month() const { return m; }
+  uint8_t day() const { return d; }
+  uint8_t hour() const { return hh; }
+  uint8_t minute() const { return mm; }
+  uint8_t second() const { return ss; }
+
+  uint8_t dayOfWeek() const;
+
+  uint16_t dayStamp() const; // 16-bit times as days since 1/1/2000
+  uint32_t unixtime() const; // 32-bit times as seconds since 1/1/1970
+private:
+  void initDate(uint16_t days);
+private:
+  uint8_t yOff, m, d, hh, mm, ss;
+};
+
 // library interface description
 class DS1307
 {
@@ -75,6 +101,7 @@ public:
     DS1307();
     void getBuffer(byte*);
     byte get(byte);
+    DateTime getDateTime();
     void set(byte, byte);
     void start(void);
     void stop(void);
@@ -85,8 +112,6 @@ public:
     int rtc_bcd[BYTE_MAX]; // used prior to read/set ds1307 registers;
     void save(void);
 };
-
-extern DS1307 RTC;
 
 #endif
 

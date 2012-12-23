@@ -49,8 +49,6 @@ DS1307::DS1307()
   Wire.begin();
 }
 
-DS1307 RTC=DS1307();
-
 // PRIVATE FUNCTIONS
 
 // Aquire data from the RTC chip in BCD format
@@ -111,6 +109,11 @@ void DS1307::getBuffer(byte *rtc)   // Aquire data from buffer and convert to in
   {
     rtc[i] = get(i);
   }
+}
+
+DateTime DS1307::getDateTime()
+{
+  return DateTime(get(YEAR),get(MONTH),get(DATE),get(HOUR),get(MIN),get(SEC));
 }
 
 byte DS1307::get(byte c)  // aquire individual RTC item from buffer, return as byte
@@ -220,3 +223,98 @@ void DS1307::start(void)
 }
 
 
+// Source: https://github.com/adafruit/RTClib/blob/master/RTClib.cpp
+////////////////////////////////////////////////////////////////////////////////
+// DateTime implementation - ignores time zones and DST changes
+// NOTE: also ignores leap seconds, see http://en.wikipedia.org/wiki/Leap_second
+const uint8_t daysInMonth[] PROGMEM = {
+  31, // Jan
+  28, // Feb (non-leap year)
+  31, // Mar
+  30, // Apr
+  31, // May
+  30, // Jun
+  31, // Jul
+  31, // Aug
+  30, // Sep
+  31, // Oct
+  30, // Nov
+  31  // Dec
+};
+
+#define SECONDS_FROM_1970_TO_2000 946684800
+
+DateTime::DateTime(uint32_t t)
+{
+  t -= SECONDS_FROM_1970_TO_2000; // bring to 2000 timestamp from 1970
+  ss = t % 60;
+  t /= 60;
+  mm = t % 60;
+  t /= 60;
+  hh = t % 24;
+  uint16_t days = t / 24;
+  initDate(days);
+}
+
+DateTime::DateTime(uint16_t d)
+{
+  ss = mm = hh = 0;
+  initDate(d);
+}
+
+// yearOff is a number of years from 2000
+DateTime::DateTime(uint8_t yearOff, uint8_t month, uint8_t day, uint8_t hour, uint8_t min, uint8_t sec)
+{
+  yOff = yearOff;
+  m = month;
+  d = day;
+  hh = hour;
+  mm = min;
+  ss = sec;
+}
+
+void DateTime::initDate(uint16_t days)
+{
+  uint8_t leap;
+  for (yOff = 0; ; ++yOff) {
+    leap = yOff % 4 == 0;
+    if (days < 365 + leap)
+      break;
+    days -= 365 + leap;
+  }
+  for (m = 1; ; ++m) {
+    uint8_t daysPerMonth = pgm_read_byte(daysInMonth + m - 1);
+    if (leap && m == 2)
+      ++daysPerMonth;
+    if (days < daysPerMonth)
+      break;
+    days -= daysPerMonth;
+  }
+  d = days + 1;
+}
+
+
+// number of days since 1/1/2000, valid for 2001..2099
+uint16_t DateTime::dayStamp() const
+{
+  uint16_t days = d;
+  for (uint8_t i = 1; i < m; ++i)
+    days += pgm_read_byte(daysInMonth + i - 1);
+  if (m > 2 && yOff % 4 == 0)
+    ++days; // add 29th of  day
+  return days + 365 * yOff + (yOff + 3) / 4 - 1;
+}
+
+uint8_t DateTime::dayOfWeek() const
+{
+  uint16_t day = dayStamp();
+  return (day + 6) % 7; // Jan 1, 2000 is a Saturday, i.e. returns 6
+}
+
+uint32_t DateTime::unixtime() const
+{
+  uint16_t days = dayStamp();
+  uint32_t t = ((days * 24L + hh) * 60 + mm) * 60 + ss;
+  t += SECONDS_FROM_1970_TO_2000; // seconds from 1970 to 2000
+  return t;
+}

@@ -76,6 +76,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EEPROM.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\LCD4Bit_mod.cpp"
 				>
 			</File>
@@ -93,6 +97,10 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\System.cpp"
 				>
 			</File>
 			<File
@@ -126,6 +134,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Alarm.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Arduino.h"
 				>
 			</File>
@@ -135,6 +147,10 @@
 			</File>
 			<File
 				RelativePath=".\DS18B20.h"
+				>
+			</File>
+			<File
+				RelativePath=".\EEPROM.h"
 				>
 			</File>
 			<File
@@ -159,6 +175,10 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\System.h"
 				>
 			</File>
 			<File

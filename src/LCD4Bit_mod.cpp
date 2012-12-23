@@ -31,8 +31,6 @@ extern "C" {
 
 #include "stdafx.h"
 
-LCD4Bit_mod LCD;
-
 //command bytes for LCD
 #define CMD_CLEAR     0x01
 #define CMD_HOME      0x02

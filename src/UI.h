@@ -3,8 +3,11 @@
 #include "stdafx.h"
 #include "LCD4Bit_mod.h"
 #include "KeyPad.h"
+#include "Alarm.h"
+#include "DS1307.h"
+#include "DS18B20.h"
 
-#define DEBUG_UI 1
+//#define DEBUG_UI 1
 
 static void onKeyPressed(byte key);
 
@@ -14,13 +17,7 @@ public:
   UIManager()
   {
     state = kMonitor;
-    switch_temp = 0;
     KEYS.set_handler(onKeyPressed);
-  }
-
-  bool is_switch_temp()
-  {
-    return switch_temp != 0;
   }
 
   void inputKeys()
@@ -170,18 +167,20 @@ private:
 
   void incValue()
   {
-    beep(1);
+    ALARM.beep(1);
   }
 
   void decValue()
   {
-    beep(1);
+    ALARM.beep(1);
   }
 
   void toggleTempSwitch()
   {
     LCD.clear();
-    switch_temp = !switch_temp;
+    Settings& settings = EEPROM.get();
+    settings.temp_swtich = !settings.temp_swtich;
+    EEPROM.save();
   }
 
   void drawMenuTitle()
@@ -253,8 +252,9 @@ private:
 
   void drawTempMenu()
   {
+    const Settings& settings = EEPROM.get();
     LCD.printIn("Switch > ");
-    LCD.printIn(is_switch_temp()?"On":"Off");
+    LCD.printIn((settings.temp_swtich == 0) ? "Off" : "On");
   }
 
   void drawMonitor()
@@ -271,7 +271,7 @@ private:
     LCD.printDight(RTC.get(DS1307::SEC_LO)); // 8
 
     LCD.print(' '); // 9
-    LCD.printDight2(temp[0]); // 10-11
+    LCD.printDight2(TEMP[0]); // 10-11
 
     // DATE
     LCD.cursorTo(2,0);
@@ -285,12 +285,12 @@ private:
     LCD.printDight(RTC.get(DS1307::YEAR_LO)); // 8
 
     LCD.print(' '); // 9
-    LCD.printDight2(temp[1]); // 10-11
+    LCD.printDight2(TEMP[1]); // 10-11
   }
 
 private:
   byte state;
-  enum
+  enum eState
   {
     kMonitor = 0x00,
     kMenu_Main = 0x13,
@@ -299,7 +299,7 @@ private:
     kMenu_Temp = 0x41,
   };
   byte menu_pos;
-  enum
+  enum eMenuPos
   {
     kMain_Time = 0x11,
     kMain_Date = 0x12,
@@ -321,11 +321,9 @@ private:
 
     kTemp_Switch   = 0x41
   };
-  byte switch_temp;
 };
 
 static void onKeyPressed(byte key)
 {
-  extern UIManager ui;
-  ui.OnKeyChanged(key);
+  UI.OnKeyChanged(key);
 }

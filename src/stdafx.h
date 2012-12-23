@@ -28,14 +28,21 @@
 #include "Arduino.h"
 #include "HardwareSerial.h"
 
+class Alarm;
 class TempManager;
-extern TempManager temp;
-/*
-#include "Wire.h"
-#include "OneWire.h"
-#include "LCD4Bit_mod.h"
-#include "DS1307.h"
-*/
+class LCD4Bit_mod;
+class DS1307;
+class UIManager;
+class System;
+class EpromManager;
+
+extern Alarm ALARM;
+extern TempManager TEMP;
+extern LCD4Bit_mod LCD;
+extern DS1307 RTC;
+extern UIManager UI;
+extern System SYSTEM;
+extern EpromManager EEPROM;
 
 /* ----------------------- hardware I/O abstraction ------------------------ */
 
@@ -70,7 +77,6 @@ extern TempManager temp;
 // LCD keys
 #define LCD_BUT_IN _BV(PC0) // A0
 #define LCD_BUT_IN_PORT PORTC
-*/
 
 // alarm output
 #define LED _BV(PB5) // D13
@@ -78,13 +84,4 @@ extern TempManager temp;
 
 #define ALARM_OUT _BV(PB2)
 #define ALARM_OUT_PORT PORTB
-
-//////////////////////////////////////////////////////////////////////////
-bool is_error();
-void error(const char* msg);
-
-bool is_alarm();
-void set_alarm(bool alarm);
-
-void beep(byte beep_cnt);
-//////////////////////////////////////////////////////////////////////////
+*/
