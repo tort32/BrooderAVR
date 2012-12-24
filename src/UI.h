@@ -79,6 +79,8 @@ public:
 
   void outputLCD()
   {
+    LCD.setDisplay(1,0,0);
+
     if(state == kMonitor)
     {
       drawMonitor();
@@ -222,11 +224,12 @@ private:
     {
     case kTime_Hour_Hi: LCD.cursorTo(2,0); break;
     case kTime_Hour_Lo: LCD.cursorTo(2,1); break;
-    case kTime_Min_Hi:  LCD.cursorTo(2,4); break;
-    case kTime_Min_Lo:  LCD.cursorTo(2,5); break;
-    case kTime_Sec_Hi:  LCD.cursorTo(2,7); break;
-    case kTime_Sec_Lo:  LCD.cursorTo(2,8); break;
+    case kTime_Min_Hi:  LCD.cursorTo(2,3); break;
+    case kTime_Min_Lo:  LCD.cursorTo(2,4); break;
+    case kTime_Sec_Hi:  LCD.cursorTo(2,6); break;
+    case kTime_Sec_Lo:  LCD.cursorTo(2,7); break;
     }
+    LCD.setDisplay(1,0,1);
   }
 
   void drawDateMenu()
@@ -243,11 +246,12 @@ private:
     {
     case kDate_Date_Hi:   LCD.cursorTo(2,0); break;
     case kDate_Date_Lo:   LCD.cursorTo(2,1); break;
-    case kDate_Month_Hi:  LCD.cursorTo(2,4); break;
-    case kDate_Month_Lo:  LCD.cursorTo(2,5); break;
-    case kDate_Year_Hi:   LCD.cursorTo(2,7); break;
-    case kDate_Year_Lo:   LCD.cursorTo(2,8); break;
+    case kDate_Month_Hi:  LCD.cursorTo(2,3); break;
+    case kDate_Month_Lo:  LCD.cursorTo(2,4); break;
+    case kDate_Year_Hi:   LCD.cursorTo(2,6); break;
+    case kDate_Year_Lo:   LCD.cursorTo(2,7); break;
     }
+    LCD.setDisplay(1,0,1);
   }
 
   void drawTempMenu()

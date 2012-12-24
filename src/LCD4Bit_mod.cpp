@@ -32,17 +32,32 @@ extern "C" {
 #include "stdafx.h"
 
 //command bytes for LCD
-#define CMD_CLEAR     0x01
-#define CMD_HOME      0x02
-#define CMD_ENTRYMODE 0x04
-#define LCD_CONTROL   0x08
-#define CMD_CURSHIFT  0x10
-#define CMD_FUNCSET   0x20
-#define CMD_SETCGRA   0x40
-#define CMD_SETDDRA   0x80
+#define CMD_CLEAR     0x01 /* 0000.0001 */
+#define CMD_HOME      0x02 /* 0000.0010 */
+#define CMD_ENTRY     0x04 /* 0000.0100 */
+#define CMD_DISPLAY   0x08 /* 0000.1000 */
+#define CMD_SHIFT     0x10 /* 0001.0000 */
+#define CMD_FUNCTION  0x20 /* 0010.0000 */
+#define CMD_SETCGRA   0x40 /* 0100.0000 */
+#define CMD_SETDDRA   0x80 /* 1000.0000 */
 
-#define CMD_RIGHT 0x1C
-#define CMD_LEFT  0x18
+// flags for CMD_ENTRY
+#define OPT_ENTRY_RIGHT 0x00
+#define OPT_ENTRY_LEFT 0x02
+#define OPT_ENTRY_SHIFTINCREMENT 0x01
+#define OPT_ENTRY_SHIFTDECREMENT 0x00
+
+// flags for LCD_DISPLAY
+#define CMD_DISPLAY_DISPLAY_ON 0x04
+#define CMD_DISPLAY_DISPLAY_OFF 0x00
+#define CMD_DISPLAY_CURSOR_ON 0x02
+#define CMD_DISPLAY_CURSOR_OFF 0x00
+#define CMD_DISPLAY_BLINK_ON 0x01
+#define CMD_DISPLAY_BLINK_OFF 0x00
+
+// flags for CMD_SHIFT
+#define CMD_SHIFT_CURSOR_RIGHT 0x0C
+#define CMD_SHIFT_CURSOR_LEFT  0x08
 
 // --------- PINS -------------------------------------
 //is the RW pin of the LCD under our control?  If we're only ever going to write to the LCD, we can use one less microcontroller pin, and just tie the LCD pin to the necessary signal, high or low.
@@ -185,7 +200,7 @@ void LCD4Bit_mod::home(){
 }
 
 
-// initiatize lcd after a short pause
+// initialize LCD after a short pause
 //while there are hard-coded details here of lines, cursor and blink settings, you can override these original settings after calling .init()
 void LCD4Bit_mod::init() {
   pinMode(Enable,OUTPUT);
@@ -229,7 +244,8 @@ void LCD4Bit_mod::init() {
 
   // display control:
   // turn display on, cursor off, no blinking
-  commandWrite(0x0C);
+  // 
+  commandWrite(CMD_DISPLAY | CMD_DISPLAY_DISPLAY_ON/*0x0C*/);
   delayMicroseconds(60);
 
   //clear display
@@ -238,6 +254,7 @@ void LCD4Bit_mod::init() {
 
   // entry mode set: 06
   // increment automatically, display shift, entire shift off
+
   commandWrite(0x06);
   delay(1);//TODO: remove unnecessary delays
 }
@@ -260,9 +277,18 @@ void LCD4Bit_mod::cursorTo(uint8_t line_num, uint8_t x){
 //scroll whole display to left
 void LCD4Bit_mod::leftScroll(uint8_t num_chars, uint8_t delay_time){
   for (uint8_t i=0; i<num_chars; i++) {
-    commandWrite(CMD_LEFT);
+    commandWrite(CMD_SHIFT | CMD_SHIFT_CURSOR_LEFT);
     delay(delay_time);
   }
+}
+
+void LCD4Bit_mod::setDisplay(bool display, bool cursor, bool blink)
+{
+  byte cmd = CMD_DISPLAY;
+  if(display) cmd |= CMD_DISPLAY_DISPLAY_ON;
+  if(cursor) cmd |= CMD_DISPLAY_CURSOR_ON;
+  if(blink) cmd |= CMD_DISPLAY_BLINK_ON;
+  commandWrite(cmd);
 }
 
 void LCD4Bit_mod::printDight(uint8_t value)
