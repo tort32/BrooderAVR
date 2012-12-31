@@ -59,15 +59,15 @@ public:
       if(key == VKEY_SELECT) return setState(kMonitor);
       if(key == VKEY_LEFT) return setState(kMenu_Main, kMain_Time);
       if(key == VKEY_RIGHT) return moveNext();
-      if(key == VKEY_UP) return incValue();
-      if(key == VKEY_DOWN) return decValue();
+      if(key == VKEY_UP) return incValue(+1);
+      if(key == VKEY_DOWN) return incValue(-1);
       break;
     case kMenu_Date:
       if(key == VKEY_SELECT) return setState(kMonitor);
       if(key == VKEY_LEFT) return setState(kMenu_Main, kMain_Date);
       if(key == VKEY_RIGHT) return moveNext();
-      if(key == VKEY_UP) return incValue();
-      if(key == VKEY_DOWN) return decValue();
+      if(key == VKEY_UP) return incValue(+1);
+      if(key == VKEY_DOWN) return incValue(-1);
       break;
     case kMenu_Temp:
       if(key == VKEY_SELECT) return setState(kMonitor);
@@ -167,14 +167,77 @@ private:
 #endif
   }
 
-  void incValue()
+  void incValue(int8_t delta)
   {
-    ALARM.beep(1);
-  }
+    byte dight;
+    int8_t min = 0, max;
+    switch(state)
+    {
+    case kMenu_Time:
+      switch(menu_pos)
+      {
+      case kTime_Hour_Hi:
+      case kTime_Hour_Lo:
+        dight = DS1307::HOUR; max = 23;
+        break;
+      case kTime_Min_Hi:
+      case kTime_Min_Lo:
+        dight = DS1307::MIN; max = 59;
+        break;
+      case kTime_Sec_Hi:
+      case kTime_Sec_Lo:
+        dight = DS1307::SEC; max = 59;
+        break;
+      }
+      switch(menu_pos)
+      {
+      case kTime_Hour_Hi:
+      case kTime_Min_Hi:
+      case kTime_Sec_Hi:
+        delta *= 10;
+        break;
+      }
+      break;
+    case kMenu_Date:
+      switch(menu_pos)
+      {
+      case kDate_Year_Hi:
+      case kDate_Year_Lo:
+        dight = DS1307::YEAR; max = 59;
+        break;
+      case kDate_Month_Hi:
+      case kDate_Month_Lo:
+        dight = DS1307::MONTH; min = 1; max = 12;
+        break;
+      case kDate_Date_Hi:
+      case kDate_Date_Lo:
+        dight = DS1307::DATE; min = 1; max =
+          DateTime::daysPerMonth(RTC.get(DS1307::MONTH), RTC.get(DS1307::YEAR));
+        break;
+      }
+      switch(menu_pos)
+      {
+      case kDate_Year_Hi:
+      case kDate_Month_Hi:
+      case kDate_Date_Hi:
+        delta *= 10;
+        break;
+      }
+      break;
+    }
 
-  void decValue()
-  {
-    ALARM.beep(1);
+    if(state == kMenu_Time || state == kMenu_Date)
+    {
+      int8_t val = (int8_t)RTC.get(dight) + delta;
+      if(val > max) val = min;
+      if(val < min) val = max;
+      RTC.set(dight, (uint8_t)val);
+    }
+    else
+    {
+      ALARM.beep(1);
+    }
+
   }
 
   void toggleTempSwitch()

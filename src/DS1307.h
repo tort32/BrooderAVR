@@ -60,6 +60,8 @@ public:
 
   uint8_t dayOfWeek() const;
 
+  static byte daysPerMonth(byte month, byte year);
+
   uint16_t dayStamp() const; // 16-bit times as days since 1/1/2000
   uint32_t unixtime() const; // 32-bit times as seconds since 1/1/1970
 private:
@@ -83,18 +85,18 @@ public:
     YEAR = 6,
     BYTE_MAX = 7,
 
-    SEC_LO,
-    SEC_HI,
-    MIN_LO,
-    MIN_HI,
-    HOUR_LO,
-    HOUR_HI,
-    DATE_LO,
-    DATE_HI,
-    MONTH_LO,
-    MONTH_HI,
-    YEAR_LO,
-    YEAR_HI,
+    SEC_LO = 10,
+    SEC_HI = 20,
+    MIN_LO = 11,
+    MIN_HI = 21,
+    HOUR_LO = 12,
+    HOUR_HI = 22,
+    DATE_LO = 14,
+    DATE_HI = 24,
+    MONTH_LO = 15,
+    MONTH_HI = 25,
+    YEAR_LO = 16,
+    YEAR_HI = 26,
   };
   // user-accessible "public" interface
   public:

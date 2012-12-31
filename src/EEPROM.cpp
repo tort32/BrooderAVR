@@ -3,7 +3,7 @@
 #include "avr/eeprom.h"
 #include "System.h"
 
-#define DEBUG_EEPROM 1
+//#define DEBUG_EEPROM 1
 
 // EEPROM section vars
 byte eeVersion EEMEM;

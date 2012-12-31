@@ -25,6 +25,7 @@
  *	enable square wave output
  *
  */
+#include "stdafx.h"
 #include "DS1307.h"
 #include "Wire.h"
 
@@ -41,7 +42,7 @@
 #define HI_HR   B00110000
 #define LO_DOW  B00000111
 #define HI_DATE B00110000
-#define HI_MTH  B00110000
+#define HI_MTH  B00010000
 #define HI_YR   B11110000
 
 DS1307::DS1307()
@@ -127,40 +128,47 @@ byte DS1307::get(byte c)  // aquire individual RTC item from buffer, return as b
   case HOUR:
     return get(HOUR_HI) * 10 + get(HOUR_LO);
   case DOW:
-    return rtc_bcd[DOW] & LO_DOW;
+    return (rtc_bcd[DOW] & LO_DOW);
   case DATE:
     return get(DATE_HI) * 10 + get(DATE_LO);
   case MONTH:
     return get(MONTH_HI) * 10 + get(MONTH_LO);
   case YEAR:
-    return get(YEAR_LO) * 10 + get(YEAR_HI);
+    return get(YEAR_HI) * 10 + get(YEAR_LO);
 
   case SEC_LO:
-    return rtc_bcd[SEC] & LO_BCD;
+    return (rtc_bcd[SEC] & LO_BCD);
   case SEC_HI:
     return (rtc_bcd[SEC] & HI_SEC) >> 4;
   case MIN_LO:
-    return rtc_bcd[MIN] & LO_BCD;
+    return (rtc_bcd[MIN] & LO_BCD);
   case MIN_HI:
     return (rtc_bcd[MIN] & HI_MIN) >> 4;
   case HOUR_LO:
-    return rtc_bcd[HOUR] & LO_BCD;
+    return (rtc_bcd[HOUR] & LO_BCD);
   case HOUR_HI:
     return (rtc_bcd[HOUR] & HI_HR) >> 4;
   case DATE_LO:
-    return rtc_bcd[DATE] % 16;
+    return (rtc_bcd[DATE] & LO_BCD);
   case DATE_HI:
-    return rtc_bcd[DATE] / 16;
+    return (rtc_bcd[DATE] & HI_DATE) >> 4;
   case MONTH_LO:
-    return rtc_bcd[MONTH] & LO_BCD;
+    return (rtc_bcd[MONTH] & LO_BCD);
   case MONTH_HI:
     return (rtc_bcd[MONTH] & HI_MTH) >> 4;
   case YEAR_LO:
-    return rtc_bcd[YEAR] % 16;
+    return (rtc_bcd[YEAR] & LO_BCD);
   case YEAR_HI:
-    return rtc_bcd[YEAR] / 16;
+    return (rtc_bcd[YEAR] & HI_BCD) >> 4;
   } // end switch
   return 0;
+}
+
+static byte getNibbles(byte v)
+{
+  // tens go in HI nibble
+  // units go in LO nibble
+  return ((v / 10) << 4) + (v % 10);
 }
 
 void DS1307::set(byte c, byte v)  // Update buffer, then update the chip
@@ -169,38 +177,46 @@ void DS1307::set(byte c, byte v)  // Update buffer, then update the chip
   switch(c)
   {
   case SEC:
-    if(v<60 && v>-1)
-    {
-      //preserve existing clock state (running/stopped)
-      int state = rtc_bcd[SEC] & CLOCKHALT;
-      rtc_bcd[SEC] = state | ((v / 10)<<4) + (v % 10);
-    }
-    break;
+    wrtbits(rtc_bcd[SEC], getNibbles(v), HI_SEC | LO_BCD); break;
   case MIN:
-    if(v<60 && v>-1)
-      rtc_bcd[MIN] = ((v / 10)<<4) + (v % 10);
-    break;
+    wrtbits(rtc_bcd[MIN], getNibbles(v), HI_MIN | LO_BCD); break;
   case HOUR:
     // TODO : AM/PM  12HR/24HR
-    if(v<24 && v>-1)
-      rtc_bcd[HOUR] = ((v / 10)<<4) + (v % 10);
-    break;
+    wrtbits(rtc_bcd[HOUR], getNibbles(v), HI_HR | LO_BCD); break;
   case DOW:
-    if(v<8 && v>-1)
-      rtc_bcd[DOW] = v;
-    break;
+    wrtbits(rtc_bcd[DOW], v, LO_DOW); break;
   case DATE:
-    if(v<32 && v>-1)
-      rtc_bcd[DATE] = ((v / 10)<<4) + (v % 10);
-    break;
+    wrtbits(rtc_bcd[DATE], getNibbles(v), HI_DATE | LO_BCD); break;
   case MONTH:
-    if(v<13 && v>-1)
-      rtc_bcd[MONTH] = ((v / 10)<<4) + (v % 10);
-    break;
+    wrtbits(rtc_bcd[MONTH], getNibbles(v), HI_MTH | LO_BCD); break;
   case YEAR:
-    if(v<50 && v>-1)
-      rtc_bcd[YEAR] = ((v / 10)<<4) + (v % 10);
-    break;
+    rtc_bcd[YEAR] = getNibbles(v); break;
+
+  case SEC_HI:
+    wrtbits(rtc_bcd[SEC], v << 4, HI_SEC); break;
+  case SEC_LO:
+    wrtbits(rtc_bcd[SEC], v, LO_BCD); break;
+  case MIN_HI:
+    wrtbits(rtc_bcd[MIN], v << 4, HI_MIN); break;
+  case MIN_LO:
+    wrtbits(rtc_bcd[MIN], v, LO_BCD); break;
+  case HOUR_HI:
+    wrtbits(rtc_bcd[HOUR], v << 4, HI_HR); break;
+  case HOUR_LO:
+    wrtbits(rtc_bcd[HOUR], v, LO_BCD); break;
+
+  case DATE_HI:
+    wrtbits(rtc_bcd[DATE], v << 4, HI_DATE); break;
+  case DATE_LO:
+    wrtbits(rtc_bcd[DATE], v, LO_BCD); break;
+  case MONTH_HI:
+    wrtbits(rtc_bcd[MONTH], v << 4, HI_MTH); break;
+  case MONTH_LO:
+    wrtbits(rtc_bcd[MONTH], v, LO_BCD); break;
+  case YEAR_HI:
+    wrtbits(rtc_bcd[YEAR], v << 4, HI_BCD); break;
+  case YEAR_LO:
+    wrtbits(rtc_bcd[YEAR], v, LO_BCD); break;
   } // end switch
   save();
 }
@@ -209,16 +225,16 @@ void DS1307::stop(void)
 {
   // set the ClockHalt bit high to stop the rtc
   // this bit is part of the seconds byte
-  read(); 	//refresh buffer first to preserve existing time
-  rtc_bcd[SEC] = rtc_bcd[SEC] | CLOCKHALT; //set the halt bit in the seconds value
+  read(); //refresh buffer first to preserve existing time
+  setbits(rtc_bcd[SEC], CLOCKHALT); //set the halt bit in the seconds value
   save(); //write register to the chip
 }
 
 void DS1307::start(void)
 {
   // unset the ClockHalt bit to start the rtc
-  read();				 //refresh buffer to get existing time
-  rtc_bcd[SEC] -= CLOCKHALT; //unset the halt bit in the seconds value
+  read(); //refresh buffer to get existing time
+  clrbits(rtc_bcd[SEC], CLOCKHALT); //unset the halt bit in the seconds value
   save(); //write register to the chip
 }
 
@@ -273,17 +289,26 @@ DateTime::DateTime(uint8_t yearOff, uint8_t month, uint8_t day, uint8_t hour, ui
   ss = sec;
 }
 
+byte DateTime::daysPerMonth(byte month, byte year)
+{
+  byte leap = (year % 4  == 0);
+  byte daysPerMonth = pgm_read_byte(daysInMonth + month - 1);
+  if(leap && month == 2) ++daysPerMonth;
+  return daysPerMonth;
+}
+
 void DateTime::initDate(uint16_t days)
 {
   uint8_t leap;
   for (yOff = 0; ; ++yOff) {
     leap = yOff % 4 == 0;
-    if (days < 365 + leap)
+    uint16_t daysPerYear = (uint16_t)365 + (uint16_t)leap;
+    if (days < daysPerYear)
       break;
-    days -= 365 + leap;
+    days -= daysPerYear;
   }
   for (m = 1; ; ++m) {
-    uint8_t daysPerMonth = pgm_read_byte(daysInMonth + m - 1);
+    uint16_t daysPerMonth = pgm_read_byte(daysInMonth + m - 1);
     if (leap && m == 2)
       ++daysPerMonth;
     if (days < daysPerMonth)

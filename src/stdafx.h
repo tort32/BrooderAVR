@@ -24,6 +24,8 @@
 
 #define CHK_BUT(pin,mask) ((~(pin))&(mask))
 
+uint8_t range_cycle(uint8_t min, uint8_t max, uint8_t val);
+
 /* ARDUINO ENVIRONMENT */
 #include "Arduino.h"
 #include "HardwareSerial.h"

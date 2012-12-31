@@ -19,3 +19,12 @@ TempManager TEMP = TempManager(oneWire);
 UIManager UI = UIManager();
 System SYSTEM = System();
 EpromManager EEPROM = EpromManager();
+
+//////////////////////////////////////////////////////////////////////////
+
+byte range_cycle(byte min, byte max, byte val)
+{
+  if(val > max) return min;
+  if(val < min) return max;
+  return val;
+}
