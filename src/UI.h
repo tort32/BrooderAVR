@@ -51,7 +51,7 @@ public:
         {
         case kMain_Time: return setState(kMenu_Time);
         case kMain_Date: return setState(kMenu_Date);
-        case kMain_Temp: return setState(kMenu_Temp);
+        case kMain_System: return setState(kMenu_System);
         }
       }
       break;
@@ -69,10 +69,18 @@ public:
       if(key == VKEY_UP) return incValue(+1);
       if(key == VKEY_DOWN) return incValue(-1);
       break;
-    case kMenu_Temp:
+    case kMenu_System:
       if(key == VKEY_SELECT) return setState(kMonitor);
-      if(key == VKEY_LEFT) return setState(kMenu_Main, kMain_Temp);
-      if(key == VKEY_RIGHT) return toggleTempSwitch();
+      if(key == VKEY_LEFT) return setState(kMenu_Main, kMain_System);
+      if(key == VKEY_RIGHT)
+      {
+        if(menu_pos == kSystem_Day)
+          return toggleDay();
+        if(menu_pos == kSystem_Temp)
+          return toggleTempSwitch();
+      }
+      if(key == VKEY_UP) return movePrev();
+      if(key == VKEY_DOWN) return moveNext();
       break;
     }
   }
@@ -99,8 +107,13 @@ public:
         return drawTimeMenu();
       if(state == kMenu_Date)
         return drawDateMenu();
-      if(state == kMenu_Temp)
-        return drawTempMenu();
+      if(state == kMenu_System)
+      {
+        if(menu_pos == kSystem_Day)
+          return drawDateMenu()
+        if(menu_pos == kSystem_Temp)
+          return drawTempMenu();
+      }
     }
   }
 
@@ -123,8 +136,8 @@ private:
       case kMenu_Date:
         menu_pos = kDate_Date_Hi;
         break;
-      case kMenu_Temp:
-        menu_pos = kTemp_Switch;
+      case kMenu_System:
+        menu_pos = kSystem_Day;
         break;
       }
     }
@@ -248,6 +261,17 @@ private:
     EEPROM.save();
   }
 
+  void toggleDay()
+  {
+      LCD.clear();
+      byte day = SYSTEM.getDay();
+      if(day == System.kInvalidDay || day == System.kDayMax)
+        day == 0;
+      else
+        ++day;
+      SYSTEM.setDay(day);
+  }
+
   void drawMenuTitle()
   {
     // menu title
@@ -256,7 +280,7 @@ private:
     case kMenu_Main: LCD.printIn("Main "); break;
     case kMenu_Time: LCD.printIn("Set Time "); break;
     case kMenu_Date: LCD.printIn("Set Date "); break;
-    case kMenu_Temp: LCD.printIn("Temp options "); break;
+    case kMenu_System: LCD.printIn("Brooder "); break;
     }
     LCD.printDight(menu_pos & 0x0f); // current menu item
     LCD.print('/');
@@ -269,7 +293,7 @@ private:
     {
     case kMain_Time: LCD.printIn("Time >"); break;
     case kMain_Date: LCD.printIn("Date >"); break;
-    case kMain_Temp: LCD.printIn("Temperature >"); break;
+    case kMain_System: LCD.printIn("System >"); break;
     }
   }
 
@@ -324,6 +348,16 @@ private:
     LCD.printIn((settings.temp_swtich == 0) ? "Off" : "On");
   }
 
+  void drawDayMenu()
+  {
+      byte day = SYSTEM.getDay();
+      LCD.printIn("Day > ");
+      if(day != SYSTEM.kInvalidDay)
+        LCD.printDight2(day);
+      else
+        LCD.printIn("NONE");
+  }
+
   void drawMonitor()
   {
     // TIME
@@ -363,14 +397,14 @@ private:
     kMenu_Main = 0x13,
     kMenu_Time = 0x26,
     kMenu_Date = 0x36,
-    kMenu_Temp = 0x41,
+    kMenu_System = 0x42,
   };
   byte menu_pos;
   enum eMenuPos
   {
     kMain_Time = 0x11,
     kMain_Date = 0x12,
-    kMain_Temp = 0x13,
+    kMain_System = 0x13,
 
     kTime_Hour_Hi  = 0x21,
     kTime_Hour_Lo  = 0x22,
@@ -386,7 +420,8 @@ private:
     kDate_Year_Hi  = 0x35,
     kDate_Year_Lo  = 0x36,
 
-    kTemp_Switch   = 0x41
+    kSystem_Day    = 0x41,
+    kSystem_Temp   = 0x42,
   };
 };
 

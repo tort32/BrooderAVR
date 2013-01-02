@@ -1,5 +1,5 @@
 1+ Implement LCD cursor blinking
 2+ Use LCD cursor blinking for time settings
-3. Add brudder day settings in UI
+3+ Add brudder day settings in UI
 4. Separate UI update and System update
 5. Implement System program
