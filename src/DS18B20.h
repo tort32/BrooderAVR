@@ -205,7 +205,7 @@ public:
 
   byte operator [](byte device)
   {
-    if(EEPROM.get().temp_swtich == 0)
+    if(EEPROM.get().temp_swap == 0)
     {
       // default order
       return value[device];

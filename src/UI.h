@@ -6,6 +6,7 @@
 #include "Alarm.h"
 #include "DS1307.h"
 #include "DS18B20.h"
+#include "System.h"
 
 //#define DEBUG_UI 1
 
@@ -77,7 +78,7 @@ public:
         if(menu_pos == kSystem_Day)
           return toggleDay();
         if(menu_pos == kSystem_Temp)
-          return toggleTempSwitch();
+          return toggleTempSwap();
       }
       if(key == VKEY_UP) return movePrev();
       if(key == VKEY_DOWN) return moveNext();
@@ -110,7 +111,7 @@ public:
       if(state == kMenu_System)
       {
         if(menu_pos == kSystem_Day)
-          return drawDateMenu()
+          return drawDayMenu();
         if(menu_pos == kSystem_Temp)
           return drawTempMenu();
       }
@@ -253,11 +254,11 @@ private:
 
   }
 
-  void toggleTempSwitch()
+  void toggleTempSwap()
   {
     LCD.clear();
     Settings& settings = EEPROM.get();
-    settings.temp_swtich = !settings.temp_swtich;
+    settings.temp_swap = !settings.temp_swap;
     EEPROM.save();
   }
 
@@ -265,8 +266,8 @@ private:
   {
       LCD.clear();
       byte day = SYSTEM.getDay();
-      if(day == System.kInvalidDay || day == System.kDayMax)
-        day == 0;
+      if(day == System::kInvalidDay || day == System::kDayMax)
+        day = 0;
       else
         ++day;
       SYSTEM.setDay(day);
@@ -280,7 +281,7 @@ private:
     case kMenu_Main: LCD.printIn("Main "); break;
     case kMenu_Time: LCD.printIn("Set Time "); break;
     case kMenu_Date: LCD.printIn("Set Date "); break;
-    case kMenu_System: LCD.printIn("Brooder "); break;
+    case kMenu_System: LCD.printIn("System "); break;
     }
     LCD.printDight(menu_pos & 0x0f); // current menu item
     LCD.print('/');
@@ -344,8 +345,8 @@ private:
   void drawTempMenu()
   {
     const Settings& settings = EEPROM.get();
-    LCD.printIn("Switch > ");
-    LCD.printIn((settings.temp_swtich == 0) ? "Off" : "On");
+    LCD.printIn("TSwap > ");
+    LCD.printIn((settings.temp_swap == 0) ? "Off" : "On");
   }
 
   void drawDayMenu()

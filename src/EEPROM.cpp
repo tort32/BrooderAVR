@@ -57,7 +57,7 @@ void EpromManager::reset()
   Serial.println("EEPROM reset");
 #endif
   // reset settings
-  data.temp_swtich = 0;
+  data.temp_swap = 0;
   data.startDayStamp = System::kInvalidDay;
 }
 
