@@ -22,9 +22,35 @@ void setup(void)
 
   SYSTEM.init();
 
-  delay(1000);
+  delay(250);
 
   LCD.clear();
+
+  /*const byte smiley[8] = {
+    B01110,
+    B10101,
+    B11111,
+    B11111,
+    B10001,
+    B11011,
+    B01110,
+    B00000
+  };
+
+  for(byte i=0;i<8;++i)
+    LCD.buildChar(i,smiley);
+
+  LCD.cursorTo(1,0);
+  char str[17];
+  for(byte i = 0; i < 16; ++i)
+    str[i] = i + 0x00;
+  str[16] = '\0';
+  LCD.printIn(str);
+
+  LCD.cursorTo(2,0);
+  LCD.printIn("0123456789ABCDEF");
+
+  ALARM.set_error(1);*/
 }
 
 void loop(void)

@@ -38,8 +38,8 @@ extern "C" {
 #define CMD_DISPLAY   0x08 /* 0000.1000 */
 #define CMD_SHIFT     0x10 /* 0001.0000 */
 #define CMD_FUNCTION  0x20 /* 0010.0000 */
-#define CMD_SETCGRA   0x40 /* 0100.0000 */
-#define CMD_SETDDRA   0x80 /* 1000.0000 */
+#define CMD_SETCGRAM  0x40 /* 0100.0000 */
+#define CMD_SETDDRAM  0x80 /* 1000.0000 */
 
 // flags for CMD_ENTRY
 #define OPT_ENTRY_RIGHT 0x00
@@ -90,8 +90,8 @@ byte g_num_lines = 2;
 //pulse the Enable pin high (for a microsecond).
 //This clocks whatever command or data is in DB4~7 into the LCD controller.
 void LCD4Bit_mod::pulseEnablePin(){
-  clrbits(CONTROL_PORT, CONTROL_EN); //digitalWrite(Enable,LOW);
-  delayMicroseconds(1);
+  //clrbits(CONTROL_PORT, CONTROL_EN); //digitalWrite(Enable,LOW);
+  //delayMicroseconds(1);
   // send a pulse to enable
   setbits(CONTROL_PORT, CONTROL_EN); //digitalWrite(Enable,HIGH);
   delayMicroseconds(1); // enable pulse must be >450ns
@@ -271,12 +271,12 @@ void LCD4Bit_mod::cursorTo(uint8_t line_num, uint8_t x){
   if (line_num == 2){
     x += 0x40;
   }
-  commandWrite(CMD_SETDDRA | x);
+  commandWrite(CMD_SETDDRAM | x);
 }
 
 //scroll whole display to left
 void LCD4Bit_mod::leftScroll(uint8_t num_chars, uint8_t delay_time){
-  for (uint8_t i=0; i<num_chars; i++) {
+  for (uint8_t i=0; i<num_chars; ++i) {
     commandWrite(CMD_SHIFT | CMD_SHIFT_CURSOR_LEFT);
     delay(delay_time);
   }
@@ -289,6 +289,18 @@ void LCD4Bit_mod::setDisplay(bool display, bool cursor, bool blink)
   if(cursor) cmd |= CMD_DISPLAY_CURSOR_ON;
   if(blink) cmd |= CMD_DISPLAY_BLINK_ON;
   commandWrite(cmd);
+}
+
+// Write char into CGRAM memory
+void LCD4Bit_mod::buildChar(uint8_t loc, const uint8_t charmap[]) {
+  // we only have 8 locations: 0-7
+  commandWrite(CMD_SETCGRAM | (loc << 3));
+  for(uint8_t i=0; i<8; ++i)
+  {
+    //commandWrite(CMD_SETCGRAM | (loc << 3) | i);
+    print(charmap[i]);
+  }
+  commandWrite(CMD_SETDDRAM);
 }
 
 void LCD4Bit_mod::printDight(uint8_t value)

@@ -15,7 +15,39 @@ void System::init()
 
 void System::update()
 {
+  bool enable = true;
+  byte temp_min, temp_max;
+
   day = calculateDay();
+
+  if(1 < day && day < 8) // 1-7
+  {
+    temp_min = 35;
+    temp_max = 37;
+  }
+  else if(day < 15) // 8-14
+  {
+    temp_min = 30;
+    temp_max = 32;
+  }
+  else if(day < 22) // 15-21
+  {
+    temp_min = 25;
+    temp_max = 27;
+  }
+  else if(day < kDayMax) // 22-28
+  {
+    temp_min = 20;
+    temp_max = 22;
+  }
+  else // out of range
+  {
+    enable = false;
+  }
+  if(enable)
+  {
+    // TODO: manage light power
+  }
 }
 
 byte System::getDay()

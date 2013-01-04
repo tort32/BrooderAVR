@@ -28,6 +28,11 @@ public:
     return (error_status != 0);
   }
 
+  void set_error(bool err)
+  {
+    error_status = err;
+  }
+
   void error(const char* msg)
   {
     error_status = 1;

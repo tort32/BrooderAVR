@@ -23,6 +23,8 @@ public:
   void printHex2(uint8_t value);
   void printDight2(uint8_t value);
   void printDight3(uint8_t value);
+
+  void buildChar(uint8_t location, const uint8_t charmap[]);
   //end of non-core--------
 
   //4bit only, therefore ideally private but may be needed by user

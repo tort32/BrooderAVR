@@ -139,12 +139,16 @@ const byte rom_max = 2; // Number of sensors
 class TempManager: private DS18B20
 {
 public:
+  enum {
+    kInvalidTemp = 0xff
+  };
+
   TempManager(const OneWire& oneWire)
     : DS18B20(oneWire)
   {
     status = kInvalid;
     for(byte i=0;i<rom_max;++i)
-      value[i]=255;
+      value[i]=kInvalidTemp;
   }
 
   void init()

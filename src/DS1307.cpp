@@ -112,12 +112,12 @@ void DS1307::getBuffer(byte *rtc)   // Aquire data from buffer and convert to in
   }
 }
 
-DateTime DS1307::getDateTime()
+DateTime DS1307::getDateTime() const
 {
   return DateTime(get(YEAR),get(MONTH),get(DATE),get(HOUR),get(MIN),get(SEC));
 }
 
-byte DS1307::get(byte c)  // aquire individual RTC item from buffer, return as byte
+byte DS1307::get(byte c) const // aquire individual RTC item from buffer, return as byte
 {
   switch(c)
   {
@@ -238,6 +238,24 @@ void DS1307::start(void)
   save(); //write register to the chip
 }
 
+// Day of weeks according to DS1307 datasheet
+// 1 - Sunday, 2 - Monday, ... 7 - Saturday
+const char dayOfWeek[7][3] = {
+  "Su",
+  "Mo",
+  "Tu",
+  "We",
+  "Th",
+  "Fr",
+  "Sa"
+};
+
+const char* DS1307::getDOWChars(byte dow) const
+{
+  // dow = 1 - Sunday, 7 - Saturday
+  return dayOfWeek[dow - 1];
+}
+
 
 // Source: https://github.com/adafruit/RTClib/blob/master/RTClib.cpp
 ////////////////////////////////////////////////////////////////////////////////
@@ -293,7 +311,7 @@ byte DateTime::daysPerMonth(byte month, byte year)
 {
   byte leap = (year % 4  == 0);
   byte daysPerMonth = pgm_read_byte(daysInMonth + month - 1);
-  if(leap && month == 2) ++daysPerMonth;
+  if(leap && month == 2) ++daysPerMonth; // count 29th of Feb for leap year
   return daysPerMonth;
 }
 
@@ -310,7 +328,7 @@ void DateTime::initDate(uint16_t days)
   for (m = 1; ; ++m) {
     uint16_t daysPerMonth = pgm_read_byte(daysInMonth + m - 1);
     if (leap && m == 2)
-      ++daysPerMonth;
+      ++daysPerMonth; // count 29th of Feb for leap year
     if (days < daysPerMonth)
       break;
     days -= daysPerMonth;

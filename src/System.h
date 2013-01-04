@@ -7,7 +7,7 @@ public:
   enum
   {
     kInvalidDay = 0xff,
-    kDayMax = 30,
+    kDayMax = 29,
   };
 public:
   System();

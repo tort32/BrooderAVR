@@ -102,8 +102,11 @@ public:
   public:
     DS1307();
     void getBuffer(byte*);
-    byte get(byte);
-    DateTime getDateTime();
+    byte get(byte) const;
+    DateTime getDateTime() const;
+
+    const char* getDOWChars(byte dow) const;
+
     void set(byte, byte);
     void start(void);
     void stop(void);
