@@ -12,20 +12,29 @@
 
 static void onKeyPressed(byte key);
 
+// User Interface management class
+// It use LCD for text output and KeyPad for user input.
+// Draws system monitor and menus.
+// For menus switching State Machine approach is used (http://en.wikipedia.org/wiki/Finite-state_machine)
 class UIManager
 {
 public:
   UIManager()
   {
     state = kMonitor;
+    frame = 0;
     KEYS.set_handler(onKeyPressed);
   }
 
-  void inputKeys()
+  /* ----------------------- Input -----------------------*/
+
+  void updateInput()
   {
     KEYS.read();
   }
 
+  // Input handling
+  // We should switch by menus and change options
   void OnKeyChanged(byte key)
   {
 #ifdef DEBUG_UI
@@ -75,10 +84,14 @@ public:
       if(key == VKEY_LEFT) return setState(kMenu_Main, kMain_System);
       if(key == VKEY_RIGHT)
       {
+        if(menu_pos == kSystem_Brooder)
+          toggleBooleanItem(EEPROM.get().enableBrooder);
         if(menu_pos == kSystem_Day)
           return toggleDay();
+        if(menu_pos == kSystem_Coop)
+          toggleBooleanItem(EEPROM.get().enableCoop);
         if(menu_pos == kSystem_Temp)
-          return toggleTempSwap();
+          toggleBooleanItem(EEPROM.get().swapTemp);
       }
       if(key == VKEY_UP) return movePrev();
       if(key == VKEY_DOWN) return moveNext();
@@ -86,8 +99,12 @@ public:
     }
   }
 
-  void outputLCD()
+  /* ----------------------- Output -----------------------*/
+
+  // Outputs text onto LCD coresponding current state
+  void updateOutput()
   {
+    frame++;
     LCD.setDisplay(1,0,0);
 
     if(state == kMonitor)
@@ -102,24 +119,29 @@ public:
 
       // menu item
       LCD.cursorTo(2,0);
-      if(state == kMenu_Main)
-        return drawMainMenu();
-      if(state == kMenu_Time)
-        return drawTimeMenu();
-      if(state == kMenu_Date)
-        return drawDateMenu();
-      if(state == kMenu_System)
+      switch(state)
       {
+      case kMenu_Main: return drawMainMenu();
+      case kMenu_Time: return drawTimeMenu();
+      case kMenu_Date: return drawDateMenu();
+      case kMenu_System:
+        if(menu_pos == kSystem_Brooder)
+          return drawBooleanItem("Brooder", EEPROM.get().enableBrooder);
         if(menu_pos == kSystem_Day)
           return drawDayMenu();
+        if(menu_pos == kSystem_Coop)
+          return drawBooleanItem("Coop", EEPROM.get().enableCoop);
         if(menu_pos == kSystem_Temp)
-          return drawTempMenu();
+          return drawBooleanItem("TSwap", EEPROM.get().swapTemp);
       }
     }
   }
 
 private:
 
+  /* ----------------------- States and Options -----------------------*/
+
+  // Switch state machine
   void setState(byte new_state, byte new_menu_pos = 0)
   {
     state = new_state;
@@ -136,6 +158,7 @@ private:
     LCD.clear();
   }
 
+  // Switch sub state
   void moveNext()
   {
     byte max_item = (state & 0x0f);
@@ -150,6 +173,7 @@ private:
     LCD.clear();
   }
 
+  // Switch sub state
   void movePrev()
   {
     if((menu_pos & 0x0f) == 1)
@@ -163,6 +187,7 @@ private:
     LCD.clear();
   }
 
+  // Change option value
   void incValue(int8_t delta)
   {
     byte dight;
@@ -234,29 +259,32 @@ private:
     }
     else
     {
+      // Not implemented
       ALARM.beep(1);
     }
-
   }
 
-  void toggleTempSwap()
+  // Change boolean option value
+  void toggleBooleanItem(byte& value)
   {
-    Settings& settings = EEPROM.get();
-    settings.temp_swap = !settings.temp_swap;
+    value = !value;
     EEPROM.save();
     LCD.clear();
   }
 
+  // Change brooder day option value
   void toggleDay()
   {
-      byte day = SYSTEM.getDay();
-      if(day == SYSTEM.kInvalidDay || day == SYSTEM.kDayMax)
+      byte day = SYSTEM.getBrooderDay();
+      if(day == SYSTEM.kDay_Invalid)
         day = 0;
       else
         ++day;
-      SYSTEM.setDay(day);
+      SYSTEM.setBrooderDay(day);
       LCD.clear();
   }
+
+  /* ----------------------- Menu drawing -----------------------*/
 
   void drawMenuTitle()
   {
@@ -268,11 +296,13 @@ private:
     case kMenu_Date: LCD.printIn("Set Date "); break;
     case kMenu_System: LCD.printIn("System "); break;
     }
-    LCD.printDight(menu_pos & 0x0f); // current menu item
+    // menu position
+    LCD.printDigit(menu_pos & 0x0f); // current menu item index
     LCD.print('/');
-    LCD.printDight(state & 0x0f); // menu items count
+    LCD.printDigit(state & 0x0f); // total menu items count
   }
 
+  // Draws Main menu current item
   void drawMainMenu()
   {
     switch(menu_pos)
@@ -283,16 +313,17 @@ private:
     }
   }
 
+  // Draws Set Time sub-menu
   void drawTimeMenu()
   {
-    LCD.printDight(RTC.get(DS1307::HOUR_HI)); // 1
-    LCD.printDight(RTC.get(DS1307::HOUR_LO)); // 2
+    LCD.printDigit(RTC.get(DS1307::HOUR_HI)); // 1
+    LCD.printDigit(RTC.get(DS1307::HOUR_LO)); // 2
     LCD.print(':'); // 3
-    LCD.printDight(RTC.get(DS1307::MIN_HI)); // 4
-    LCD.printDight(RTC.get(DS1307::MIN_LO)); // 5
+    LCD.printDigit(RTC.get(DS1307::MIN_HI)); // 4
+    LCD.printDigit(RTC.get(DS1307::MIN_LO)); // 5
     LCD.print(':'); // 6
-    LCD.printDight(RTC.get(DS1307::SEC_HI)); // 7
-    LCD.printDight(RTC.get(DS1307::SEC_LO)); // 8
+    LCD.printDigit(RTC.get(DS1307::SEC_HI)); // 7
+    LCD.printDigit(RTC.get(DS1307::SEC_LO)); // 8
     switch(menu_pos)
     {
     case kTime_Hour_Hi: LCD.cursorTo(2,0); break;
@@ -305,16 +336,17 @@ private:
     LCD.setDisplay(1,0,1);
   }
 
+  // Draws Set Date sub-menu
   void drawDateMenu()
   {
-    LCD.printDight(RTC.get(DS1307::DATE_HI)); // 1
-    LCD.printDight(RTC.get(DS1307::DATE_LO)); // 2
+    LCD.printDigit(RTC.get(DS1307::DATE_HI)); // 1
+    LCD.printDigit(RTC.get(DS1307::DATE_LO)); // 2
     LCD.print('/'); // 3
-    LCD.printDight(RTC.get(DS1307::MONTH_HI)); // 4
-    LCD.printDight(RTC.get(DS1307::MONTH_LO)); // 5
+    LCD.printDigit(RTC.get(DS1307::MONTH_HI)); // 4
+    LCD.printDigit(RTC.get(DS1307::MONTH_LO)); // 5
     LCD.print('/'); // 6
-    LCD.printDight(RTC.get(DS1307::YEAR_HI)); // 7
-    LCD.printDight(RTC.get(DS1307::YEAR_LO)); // 8
+    LCD.printDigit(RTC.get(DS1307::YEAR_HI)); // 7
+    LCD.printDigit(RTC.get(DS1307::YEAR_LO)); // 8
     LCD.print(' '); // 9
     byte dow = RTC.get(DS1307::DOW);
     const char* sDOW = RTC.getDOWChars(dow); // 2 chars
@@ -332,115 +364,172 @@ private:
     LCD.setDisplay(1,0,1);
   }
 
-  void drawTempMenu()
+  // Draws boolean option item
+  void drawBooleanItem(const char* name, const byte value)
   {
-    const Settings& settings = EEPROM.get();
-    LCD.printIn("TSwap > ");
-    LCD.printIn((settings.temp_swap == 0) ? "Off" : "On");
+    LCD.printIn(name);
+    LCD.printIn(" > ");
+    LCD.printIn((value == 0) ? "Off" : "On");
   }
 
+  // Draws brooder day option item
   void drawDayMenu()
   {
     LCD.printIn("Day > ");
     printDay();
   }
 
+  /* ----------------------- Aux drawings -----------------------*/
+
   void printDay()
   {
-    byte day = SYSTEM.getDay();
-    if(day != SYSTEM.kInvalidDay)
-      LCD.printDight2(day);
+    byte day = SYSTEM.getBrooderDay();
+    if(day != SYSTEM.kDay_Invalid)
+      LCD.printDigit2(day+1); // day 1-28
     else
-      LCD.printIn("NS");
+      LCD.printIn("\xFD ");
   }
 
-  void printTemp(byte tmp)
+  void printTemp(int8_t tmp) // print 4 chars
   {
-    if(tmp != TEMP.kInvalidTemp)
+    if(tmp != TEMP.kTemp_Invalid)
     {
-      LCD.printDight2(tmp);
+      if(tmp < 0)
+      {
+        tmp = -tmp;
+        LCD.print('-');
+      }
+      else
+      {
+        LCD.print('+');
+      }
+      uint8_t celsius = (uint8_t)RAW_TO_CELSIUS(tmp);
+      LCD.printDigit2(celsius);
       LCD.print('\xDF');
     }
     else
     {
-      LCD.printIn("NA ");
+      LCD.printIn(" N/A");
     }
   }
+
+  void printTemp(int16_t tmp) // print 5 chars
+  {
+    if(tmp != TEMP.kTemp_Invalid)
+    {
+      if(tmp < 0)
+      {
+        tmp = -tmp;
+        LCD.print('-');
+      }
+      else
+      {
+        LCD.print('+');
+      }
+      uint8_t celsius = (uint8_t)RAW_TO_CELSIUS(tmp);
+      LCD.printDigit2(celsius);
+      LCD.print('\xDF');
+      uint8_t fr = (uint8_t)(tmp - CELSIUS_TO_RAW(celsius)); // fraction data
+      uint8_t fr_dig = 0;
+      if(fr & 8) fr_dig+=50; // 1000 = .5
+      if(fr & 4) fr_dig+=25; // 0100 = .25
+      if(fr & 2) fr_dig+=13; // 0010 = .125
+      if(fr & 1) fr_dig+=06; // 0001 = .0625
+      LCD.printDigit(fr_dig/10);
+    }
+    else
+    {
+      LCD.printIn("  N/A ");
+    }
+  }
+
+  /* ----------------------- Draw system monitor -----------------------*/
 
   void drawMonitor()
   {
     // 0123456789ABCDEF
-    // HH:MM SUN Day-01 8/8
-    // bruder30c kur20c 4/12
+    // HH:MM B*01 +30°5
+    // SU ** C ** +20°5
 
-    // HH::MM SU xxxxxx
-    // 01 30°5 *.u 20°5
+    const Settings& settings = EEPROM.get();
+    byte alarm = SYSTEM.getAlarm();
+    byte flash = frame % 2;
 
     LCD.cursorTo(1,0);
-    LCD.printDight(RTC.get(DS1307::HOUR_HI));
-    LCD.printDight(RTC.get(DS1307::HOUR_LO));
+    LCD.printDigit(RTC.get(DS1307::HOUR_HI));
+    LCD.printDigit(RTC.get(DS1307::HOUR_LO));
     LCD.print(':');
-    LCD.printDight(RTC.get(DS1307::MIN_HI));
-    LCD.printDight(RTC.get(DS1307::MIN_LO));
+    LCD.printDigit(RTC.get(DS1307::MIN_HI));
+    LCD.printDigit(RTC.get(DS1307::MIN_LO));
     LCD.print(' ');
+
+    if(settings.enableBrooder)
+    {
+      LCD.printIn("B\xA5");
+      printDay();
+
+      if(alarm & flash & SYSTEM.kAlarm_Brudder_Hi)
+        LCD.print('^');
+      else if(alarm & flash & SYSTEM.kAlarm_Brudder_Lo)
+        LCD.print('v');
+      else
+        LCD.print(' ');
+    }
+    else
+    {
+      LCD.printIn("B    ");
+    }
+
+    printTemp(TEMP[0]);
+
+    LCD.cursorTo(2,0);
     byte dow = RTC.get(DS1307::DOW);
     const char* sDOW = RTC.getDOWChars(dow); // 2 chars
     LCD.printIn(sDOW);
-    LCD.printIn(" Day-");
-    printDay();
 
-    LCD.cursorTo(2,0);
-    LCD.printIn("Bruder");
-    printTemp(TEMP[0]);
-    LCD.printIn(" Kur");
+    LCD.printIn("    ");
+    if(settings.enableCoop)
+    {
+      LCD.printIn("C\xA5");
+      if(SYSTEM.getCoopLight())
+        LCD.print('*');
+      else
+        LCD.print(' ');
+      LCD.print(' ');
+
+      if(alarm & flash & SYSTEM.kAlarm_Coop_Hi)
+        LCD.print('^');
+      else if(alarm & flash & SYSTEM.kAlarm_Coop_Lo)
+        LCD.print('v');
+      else
+        LCD.print(' ');
+    }
+    else
+    {
+      LCD.printIn("C    ");
+    }
+
     printTemp(TEMP[1]);
-
-    // TIME
-    /*
-    LCD.cursorTo(1,0);
-    LCD.printDight(RTC.get(DS1307::HOUR_HI)); // 1
-    LCD.printDight(RTC.get(DS1307::HOUR_LO)); // 2
-    LCD.print(':'); // 3
-    LCD.printDight(RTC.get(DS1307::MIN_HI)); // 4
-    LCD.printDight(RTC.get(DS1307::MIN_LO)); // 5
-    LCD.print(':'); // 6
-    LCD.printDight(RTC.get(DS1307::SEC_HI)); // 7
-    LCD.printDight(RTC.get(DS1307::SEC_LO)); // 8
-
-    LCD.print(' '); // 9
-    LCD.printDight2(TEMP[0]); // 10-11
-
-    // DATE
-    LCD.cursorTo(2,0);
-    LCD.printDight(RTC.get(DS1307::DATE_HI)); // 1
-    LCD.printDight(RTC.get(DS1307::DATE_LO)); // 2
-    LCD.print('/'); // 3
-    LCD.printDight(RTC.get(DS1307::MONTH_HI)); // 4
-    LCD.printDight(RTC.get(DS1307::MONTH_LO)); // 5
-    LCD.print('/'); // 6
-    LCD.printDight(RTC.get(DS1307::YEAR_HI)); // 7
-    LCD.printDight(RTC.get(DS1307::YEAR_LO)); // 8
-
-    LCD.print(' '); // 9
-    LCD.printDight2(TEMP[1]); // 10-11
-    */
   }
 
 private:
-  byte state;
+  byte state; // state machine position
   enum eState
   {
-    // Hi nibble - menu Id, Lo nibble - number of items
+    // Hi 4 bits - menu Id
+    // Lo 4 bits - number of items in the menu
     kMonitor = 0x00,
     kMenu_Main = 0x13,
     kMenu_Time = 0x26,
     kMenu_Date = 0x37,
-    kMenu_System = 0x42,
+    kMenu_System = 0x44,
   };
-  byte menu_pos;
+  byte menu_pos; // sub state for menus
   enum eMenuPos
   {
-    // Hi nibble - menu Id, Lo nibble - item number (starting 1)
+    // Hi 4 bits - menu Id
+    // Lo 4 bits - menu item index (starting 1)
+    // Should be in consistent with eState constants
     kMain_Time = 0x11,
     kMain_Date = 0x12,
     kMain_System = 0x13,
@@ -460,9 +549,12 @@ private:
     kDate_Year_Lo  = 0x36,
     kDate_Day      = 0x37,
 
-    kSystem_Day    = 0x41,
-    kSystem_Temp   = 0x42,
+    kSystem_Brooder= 0x41,
+    kSystem_Day    = 0x42,
+    kSystem_Coop   = 0x43,
+    kSystem_Temp   = 0x44,
   };
+  byte frame; // frame counter. Used for flashing chars
 };
 
 static void onKeyPressed(byte key)

@@ -16,6 +16,7 @@ EpromManager::EpromManager()
 
 void EpromManager::init()
 {
+  // Load EEPROM data and check data version
   byte data_sizeof = sizeof(Settings);
 #ifdef DEBUG_EEPROM
   Serial.println("EEPROM read");
@@ -51,21 +52,26 @@ void EpromManager::init()
   }
 }
 
+// Reset settings
 void EpromManager::reset()
 {
 #ifdef DEBUG_EEPROM
   Serial.println("EEPROM reset");
 #endif
   // reset settings
-  data.temp_swap = 0;
-  data.startDayStamp = System::kInvalidDay;
+  data.swapTemp = 0;
+  data.startDayStamp = SYSTEM.kDay_Invalid;
+  data.enableBrooder = 0;
+  data.enableCoop = 0;
 }
 
+// Returns settings for read/update
 Settings& EpromManager::get()
 {
   return data;
 }
 
+// Saves EEPROM data
 void EpromManager::save()
 {
 #ifdef DEBUG_EEPROM

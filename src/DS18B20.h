@@ -2,9 +2,12 @@
 
 #include "OneWire.h"
 #include "stdafx.h"
+#include "Alarm.h"
 
 //#define DEBUG_DS18B20 1
 
+// DS18B20 class routine
+// 
 class DS18B20
 {
 public:
@@ -86,8 +89,26 @@ public:
     ow->write(0x44); // CONVERT T
   }
 
-  // Reading temperatire in celsius from device
-  bool read(byte rom[8], volatile byte* temp)
+  // Reading temperature in celsius from device
+  bool read(byte rom[8], volatile int8_t* temp)
+  {
+    int16_t temp_raw;
+    if(!read(rom, &temp_raw))
+      return false;
+
+    int8_t celsius = (int8_t)(temp_raw / 16);
+
+#ifdef DEBUG_DS18B20
+    Serial.print("T = ");
+    Serial.println(celsius, DEC);
+#endif
+
+    *temp = celsius;
+    return true;
+  }
+
+  // Reading raw temperature from device
+  bool read(byte rom[8], volatile int16_t* temp)
   {
 #ifdef DEBUG_DS18B20
     Serial.print("DS18B20 READ ");
@@ -112,20 +133,33 @@ public:
       return false;
     }
 
-    uint32_t raw = (data[1] << 8) | data[0];
+    //    bits      7     6     5     4     3     2     1     0
+    // data[0] = 2^+3, 2^+2, 2^+1, 2^+0, 2^-1, 2^-2, 2^-3, 2^-4
+    // data[1] = SIGN, SIGN, SIGN, SIGN, SIGN, 2^+6, 2^+5, 2^+4
+
+    // In low precision modes last low bits are undefined. So we should discard it.
     byte cfg = (data[4] & 0x60);
-    if (cfg == 0x00) raw = raw << 3;  // 9 bit resolution, 93.75 ms
-    else if (cfg == 0x20) raw = raw << 2; // 10 bit res, 187.5 ms
-    else if (cfg == 0x40) raw = raw << 1; // 11 bit res, 375 ms
-    // default is 12 bit resolution, 750 ms conversion time
-    byte celsius = raw / 16;
+    byte raw_hi = data[1] & 0x87; // take a sign and 3 low data bits
+    byte raw_lo;
+    if (cfg == 0x00) // 9 bit resolution, 93.75 ms
+      raw_lo = data[0] & 0xF8;
+    else if (cfg == 0x20) // 10 bit res, 187.5 ms
+      raw_lo = data[0] & 0xFC;
+    else if (cfg == 0x40) // 11 bit res, 375 ms
+      raw_lo = data[0] & 0xFE;
+    else // default is 12 bit resolution, 750 ms conversion time
+      raw_lo = data[0];
+
+    uint16_t raw = (raw_hi << 8) | raw_lo;
 
 #ifdef DEBUG_DS18B20
-    Serial.print("T = ");
-    Serial.println(celsius, DEC);
+    Serial.print("CFG = ");
+    Serial.println(cfg, HEX);
+    Serial.print("RAW = ");
+    Serial.println(raw, HEX);
 #endif
 
-    *temp = celsius;
+    *temp = *((int16_t*)((uint16_t*)&raw));
     return true;
   }
 private:
@@ -135,12 +169,28 @@ private:
 #include "LCD4Bit_mod.h"
 #include "EEPROM.h"
 
+// Temperature format using for TempManager
+#define TEMP_RAW_INT 1
+#ifdef TEMP_RAW_INT
+typedef int16_t RawTemp;
+#define CELSIUS_TO_RAW(t) ((int16_t)(t*16))
+#define RAW_TO_CELSIUS(t) ((int8_t)(t/16))
+#else
+typedef int8_t RawTemp;
+#define CELSIUS_TO_RAW(t) t
+#define RAW_TO_CELSIUS(t) t
+#endif
+
 const byte rom_max = 2; // Number of sensors
+
+// Temperature sensors management class
+// Requests temperature sensors and read values
+// Using settings to swap temperature sensors
 class TempManager: private DS18B20
 {
 public:
   enum {
-    kInvalidTemp = 0xff
+    kTemp_Invalid = (RawTemp)CELSIUS_TO_RAW(55), // default power-on reset value
   };
 
   TempManager(const OneWire& oneWire)
@@ -148,7 +198,7 @@ public:
   {
     status = kInvalid;
     for(byte i=0;i<rom_max;++i)
-      value[i]=kInvalidTemp;
+      value[i]=kTemp_Invalid;
   }
 
   void init()
@@ -161,9 +211,9 @@ public:
 
       LCD.cursorTo(2,0);
       LCD.printIn("Found ");
-      LCD.printDight(rom_found);
+      LCD.printDigit(rom_found);
       LCD.print('/');
-      LCD.printDight(rom_max);
+      LCD.printDigit(rom_max);
 
       ALARM.beep(3);
       return;
@@ -174,51 +224,53 @@ public:
 
   void update()
   {
+    // 'status' used to cycle between steps:
+    //   Idle -> Conversion -> Read 0 -> Read 1 -> Idle
+
+    // When Idle we can start conversion
     if(status == kIdle)
     {
       start(); // ~2.9ms
-      status = kConversion;
+      status = kConversion; // move to next step
       return;
     }
 
+    // While Conversion we should wait all sensors is ready
     if(status == kConversion)
     {
       if(is_ready()) // ~100us
       {
-        status = kRead;
+        status = kRead; // move to next step
         return;
       }
     }
 
+    // At Read we sequentially read sensors values
     if(status & kRead)
     {
       byte id = status & kReadMask;
       if(id < rom_max)
       {
         read(rom[id], &value[id]); // ~21.6ms
-        status = kRead | (++id);
+        status = kRead | (++id); // move to next sensor
         return;
       }
       else
       {
-        status = kIdle;
+        status = kIdle; // move to next step
         return;
       }
     }
   }
 
-  byte operator [](byte device)
+  // Returns sensor value
+  RawTemp operator [](byte device)
   {
-    if(EEPROM.get().temp_swap == 0)
-    {
-      // default order
-      return value[device];
-    }
+    // Take into account swap sensors flag
+    if(EEPROM.get().swapTemp == 0)
+      return value[device]; // default order
     else
-    {
-      // inverse order
-      return value[(rom_max - 1) - device];
-    }
+      return value[(rom_max - 1) - device]; // reverse order
   }
 
   private:
@@ -230,8 +282,7 @@ public:
       kReadMask = 0x0f,
       kInvalid = 0x80,
     };
-    const DS18B20* ds;
     byte rom[rom_max][8]; // OneWire ROMs for 1-wire temperature sensors
-    byte value[rom_max];
-    byte status;
+    RawTemp value[rom_max]; // Sensors data array
+    byte status; // function step counter
 };

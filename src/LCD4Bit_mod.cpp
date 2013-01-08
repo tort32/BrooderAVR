@@ -1,35 +1,5 @@
-/*
-LCD4Bit v0.1 16/Oct/2006 neillzero http://abstractplain.net
-
-What is this?
-An arduino library for comms with HD44780-compatible LCD, in 4-bit mode (saves pins)
-
-Sources:
-- The original "LiquidCrystal" 8-bit library and tutorial
-    http://www.arduino.cc/en/uploads/Tutorial/LiquidCrystal.zip
-    http://www.arduino.cc/en/Tutorial/LCDLibrary
-- DEM 16216 datasheet http://www.maplin.co.uk/Media/PDFs/N27AZ.pdf
-- Massimo's suggested 4-bit code (I took initialization from here) http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1144924220/8
-See also:
-- glasspusher's code (probably more correct): http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1160586800/0#0
-
-Tested only with a DEM 16216 (maplin "N27AZ" - http://www.maplin.co.uk/Search.aspx?criteria=N27AZ)
-If you use this successfully, consider feeding back to the arduino wiki with a note of which LCD it worked on.
-
-Usage:
-see the examples folder of this library distribution.
-
-*/
-#include "LCD4Bit_mod.h"
-#include "arduino.h"		//all things wiring / arduino
-
-extern "C" {
-  #include <stdio.h>		//not needed yet
-  #include <string.h>		//needed for strlen()
-  #include <inttypes.h>
-}
-
 #include "stdafx.h"
+#include "LCD4Bit_mod.h"
 
 //command bytes for LCD
 #define CMD_CLEAR     0x01 /* 0000.0001 */
@@ -64,19 +34,13 @@ extern "C" {
 //this stops us sending signals to the RW pin if it isn't being used.
 //#define USING_RW
 
-//RS, RW and Enable can be set to whatever you like
-int RS = 8;
-int RW = 11;
-int Enable = 9;
-//DB should be an unseparated group of pins  - because of lazy coding in pushNibble()
-int DB[] = {4, 5, 6, 7};  //wire these to DB4~7 on LCD.
-
+#define DATA_DDR  DDRD
 #define DATA_PORT PORTD
-
 #define DATA_PINS 0xF0
 #define DATA_PINS_LO_NIBBLE(x) ((x & 0x0f) << 4)
 #define DATA_PINS_HI_NIBBLE(x) (x & 0xf0)
 
+#define CONTROL_DDR  DDRB
 #define CONTROL_PORT PORTB
 #define CONTROL_RS _BV(PB0)
 #define CONTROL_EN _BV(PB1)
@@ -172,7 +136,6 @@ void LCD4Bit_mod::printIn(const char* msg) {
   uint8_t i;  //fancy int.  avoids compiler warning when comparing i with strlen()'s uint8_t
   uint8_t len = strlen(msg);
   for (i=0;i < len ;i++){
-    //print(msg[i]);
     //let pushByte worry about the intricacies of Enable, nibble order.
     pushByte(msg[i]);
     delayMicroseconds(40); // commands need > 37us to settle
@@ -203,15 +166,12 @@ void LCD4Bit_mod::home(){
 // initialize LCD after a short pause
 //while there are hard-coded details here of lines, cursor and blink settings, you can override these original settings after calling .init()
 void LCD4Bit_mod::init() {
-  pinMode(Enable,OUTPUT);
-  pinMode(RS,OUTPUT);
+  // Configure pins as outputs
+  setbits(CONTROL_DDR, CONTROL_EN | CONTROL_RS);
 #ifdef USING_RW
-  pinMode(RW,OUTPUT);
+  setbits(CONTROL_DDR, CONTROL_RW);
 #endif
-  pinMode(DB[0],OUTPUT);
-  pinMode(DB[1],OUTPUT);
-  pinMode(DB[2],OUTPUT);
-  pinMode(DB[3],OUTPUT);
+  setbits(DATA_DDR, DATA_PINS);
 
   delay(50);
 
@@ -282,6 +242,7 @@ void LCD4Bit_mod::leftScroll(uint8_t num_chars, uint8_t delay_time){
   }
 }
 
+// Enables LCD, cursor and cursor blinking
 void LCD4Bit_mod::setDisplay(bool display, bool cursor, bool blink)
 {
   byte cmd = CMD_DISPLAY;
@@ -294,53 +255,35 @@ void LCD4Bit_mod::setDisplay(bool display, bool cursor, bool blink)
 // Write char into CGRAM memory
 void LCD4Bit_mod::buildChar(uint8_t loc, const uint8_t charmap[]) {
   // we only have 8 locations: 0-7
-  commandWrite(CMD_SETCGRAM | (loc << 3));
+  commandWrite(0x40 + ((loc&0x7) << 3));
   for(uint8_t i=0; i<8; ++i)
-  {
-    //commandWrite(CMD_SETCGRAM | (loc << 3) | i);
     print(charmap[i]);
-  }
   commandWrite(CMD_SETDDRAM);
 }
 
-void LCD4Bit_mod::printDight(uint8_t value)
+// draw single decimal digit number
+void LCD4Bit_mod::printDigit(uint8_t value)
 {
   uint8_t ch = value < 10 ? value + '0' : value - 10 + 'A';
   print(ch);
 }
 
-void LCD4Bit_mod::printHex(uint8_t value)
-{
-  printDight(value);
-}
-
-void LCD4Bit_mod::printHex2(uint8_t value)
-{
-  uint8_t h2 = value / 16;
-  uint8_t h1 = value % 16;
-  printHex(h2);
-  printHex(h1);
-}
-
-void LCD4Bit_mod::printDight2(uint8_t value)
+// draw two decimal digit number
+void LCD4Bit_mod::printDigit2(uint8_t value)
 {
   uint8_t d2 = value / 10;
   uint8_t d1 = value % 10;
-  printDight(d2);
-  printDight(d1);
+  printDigit(d2);
+  printDigit(d1);
 }
 
+// draw three decimal digit number
 void LCD4Bit_mod::printDight3(uint8_t value)
 {
   uint8_t d3 = value / 100;
   uint8_t d2 = (value / 10) % 10;
   uint8_t d1 = value % 10;
-  printDight(d3);
-  printDight(d2);
-  printDight(d1);
+  printDigit(d3);
+  printDigit(d2);
+  printDigit(d1);
 }
-
-//Improvements ------------------------------------------------
-//Remove the unnecessary delays (e.g. from the end of pulseEnablePin()).
-//Allow the user to pass the pins to be used by the LCD in the constructor, and store them as member variables of the class instance.
-//-------------------------------------------------------------

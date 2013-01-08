@@ -9,7 +9,7 @@
 /* ------------------------------------------------------------------------- */
 void setup(void)
 {
-  Serial.begin(9600);
+  Serial.begin(9600); // DEBUG
 
   ALARM.init();
 
@@ -17,16 +17,21 @@ void setup(void)
   LCD.printIn("Hello");
 
   EEPROM.init();
-
   TEMP.init();
-
   SYSTEM.init();
 
-  delay(250);
+  if(!ALARM.getError())
+  {
+    // clear display
+    delay(250);
+    LCD.clear();
+  }
 
-  LCD.clear();
+  
+/*
+  // test code for custom characters
 
-  /*const byte smiley[8] = {
+  const byte smiley[8] = {
     B01110,
     B10101,
     B11111,
@@ -34,7 +39,7 @@ void setup(void)
     B10001,
     B11011,
     B01110,
-    B00000
+    B01010
   };
 
   for(byte i=0;i<8;++i)
@@ -50,7 +55,8 @@ void setup(void)
   LCD.cursorTo(2,0);
   LCD.printIn("0123456789ABCDEF");
 
-  ALARM.set_error(1);*/
+  ALARM.set_error(1);
+*/
 }
 
 void loop(void)
@@ -59,14 +65,14 @@ void loop(void)
   // Used for debugging cycle time
   //tglbits(LED_PORT, LED);
 
-  if(ALARM.is_error())
+  if(ALARM.getError()) // stop if any errors
     return;
 
   // Keys should be responsive
   // So update it every cycle
-  setbits(LED_PORT, LED);
-  UI.inputKeys(); // ~1.8ms
-  clrbits(LED_PORT, LED);
+  setbits(LED_PORT, LED); // DEBUG
+  UI.updateInput(); // ~1.8ms
+  clrbits(LED_PORT, LED); // DEBUG
 
   // Some update parts take much time to perform
   // We use frame counter and schedule updates call for defined frames
@@ -87,16 +93,17 @@ void loop(void)
     break;
   case 2:
     // LCD update
-    UI.outputLCD(); // ~5.4ms
+    UI.updateOutput(); // ~5.4ms
     break;
   case 3:
     // Switch on alarm signal on alarm status
     ALARM.update();
     break;
   case 4:
+    // Execute system functions
     SYSTEM.update();
   default:
-    _delay_ms(20);
+    _delay_ms(20); // TODO: use sleep
     break;
   }
   if(++frame == frame_max) frame = 0;
@@ -104,6 +111,7 @@ void loop(void)
 
 /* ------------------------------------------------------------------------- */
 
+// Arduino's main implementation
 int main(void)
 {
   init();

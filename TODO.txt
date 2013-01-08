@@ -1,5 +1,10 @@
-1+ Implement LCD cursor blinking
-2+ Use LCD cursor blinking for time settings
-3+ Add brudder day settings in UI
-4. Separate UI update and System update
-5. Implement System program
++ Implement LCD cursor blinking
++ Use LCD cursor blinking for time settings
++ Add brudder day settings in UI
++ Implement System program
+. Add light sensor implementation
+. Use light sensor data for adjusting Coop light
+. Setup temp sensors precision at init
+. Implement Settings Reset menu option
+. Add UI Off State (to switch off LCD)
+. Use Sleep between updates

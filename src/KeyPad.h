@@ -10,7 +10,6 @@
 #define VKEY_NUM    5
 #define VKEY_NONE   0xFF
 
-
 //           VCC
 // SCHEME:    |        KEY    ADC LEVEL
 //  ________ [2k]
@@ -27,8 +26,11 @@
 //                     NONE  =1023(MAX)                                =1023
 
 const uint16_t adc_key_val[VKEY_NUM] =
-  { 72, 237, 417, 623, 882 }; // ADC MIDDLE
+{ 72, 237, 417, 623, 882 }; // ADC MIDDLE
 
+// KeyPad manager class
+// Used to read pressed key from Key shield
+// It use changeable handler function for handling keys pressing
 class KeyPad
 {
 public:
@@ -69,12 +71,13 @@ public:
     return key;
   }
 
-  // Set key pressed function callback
+  // Set key pressed function handler
   void set_handler(OnKeyPressedFP pHandler)
   {
     onKeyPressed = pHandler;
   }
-//private:
+
+private:
 
   // Convert ADC value to key number
   static byte get_key(uint16_t adc_key_in)
